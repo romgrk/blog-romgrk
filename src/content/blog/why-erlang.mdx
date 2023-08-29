@@ -1,0 +1,61 @@
+---
+title: 'why is erlang so good?'
+description: 'Explore why Erlang is a good choice'
+pubDate: 'Aug 29 2023'
+heroImage: '/why-erlang/main.svg'
+---
+
+This posts is an exploration of Erlang VM, intended at understanding why "people" keep saying it's a great platform for
+certain use-cases.
+
+## The Basics
+
+First, let's establish what Erlang/OTP is exactly.
+
+The OTP in "Erlang/OTP" stands for "Open Telecom Platform", which makes sense since it was developped
+at Ericsson. It's designed to run in high-scalability high-availability requirements.
+
+Erlang is both a programming language _and_ a runtime.
+Erlang source code is converted into bytecode, which is run on the Erlang VM.
+The VM provides the runtime and everything that is required by it, such as garbage collection.
+It also includes a JIT module to make it fast, powered by [asmjit](https://github.com/asmjit/asmjit).
+
+The current Erlang VM is called BEAM, which stood for _"Bogdan's Erlang Abstract Machine"_, and now stands
+for _"Björn's Erlang Abstract Machine"_. Which were respectively the first and second maintainers. Let's
+say it's a good thing I've never been the maintainer of the Erlang VM or the name would have become very
+unfortunate.
+
+Architecturally, Erlang is quite similar to Java.
+
+Erlang is written in C/C++, with large parts of the compiler & runtime written in Erlang itself.
+
+## Running stuff
+
+To give a very basic example of how it all ties together, let's run a simple hello world program.
+Defining a module looks like this:
+
+
+```erlang
+% hello.erl
+-module(hello).
+-export([world/0]).
+
+world() -> io:format("Hello, world\n").
+```
+
+And running it looks like this:
+
+```sh
+# Compile the source code:
+$ erlc hello.erl
+# It creates the bytecode at "./hello.beam"
+# And then we can run the bytecode on the VM:
+$ erl -noshell -s hello world -s init stop
+```
+
+## Garbage collection
+
+> Erlang manages dynamic memory with a tracing garbage collector. More precisely a per process generational semi-space copying collector using Cheney's copy collection algorithm together with a global large object space. (See C. J. Cheney in References.)
+
+https://www.erlang.org/doc/apps/erts/garbagecollection
+
