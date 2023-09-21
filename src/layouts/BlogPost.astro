@@ -6,18 +6,19 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 ---
 
 <style>
-  .post-title {
-    margin-bottom: 1em;
-    padding: 1em 0;
+  .post-header {
     text-align: center;
     line-height: 1;
+    margin-bottom: 1em;
   }
-  .post-title h1 {
-    margin: 0 0 0.5em 0;
+  .post-title {
+    font-size: 2rem;
+    margin-bottom: 2rem;
   }
   .post-date {
-    margin-bottom: 0.5em;
-    color: var(--color-muted-fg);
+    color: var(--color-muted-2x-fg);
+    margin-bottom: 1rem;
+    /* font-style: italic; */
   }
 
   .post p {
@@ -29,7 +30,7 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 </style>
 
 <article class="post">
-  <div class="post-title">
+  <div class="post-header">
     <div class="post-date">
       <FormattedDate date={pubDate} />
       {
@@ -40,7 +41,8 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
         )
       }
     </div>
-    <h1>{title}</h1>
+    <h1 class="post-title">{title}</h1>
+
     <hr />
   </div>
 

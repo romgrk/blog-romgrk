@@ -3,7 +3,8 @@
   --color-body-bg:  #262626;
   --color-body-fg:  #dce4f1;
 
-  --color-muted-fg:  #8d9298;
+  --color-muted-fg:    #8d9298;
+  --color-muted-2x-fg: #6A6E73;
 
   --color-footer-bg: #101010;
   --color-footer-fg: var(--color-body-fg);
