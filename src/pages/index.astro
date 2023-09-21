@@ -2,6 +2,7 @@
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import Home from './home.mdx';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 ---
 
@@ -13,24 +14,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
   <body>
     <Header title={SITE_TITLE} />
     <main>
-      <h1>/home</h1>
-      <p>
-        Simple no-nonsense programming posts. That's it.
-      </p>
-      <p>Topics I like:</p>
-      <ul>
-        <li>Functionnal programming</li>
-        <li>Performance optimization</li>
-        <li>Language design</li>
-        <li>Rust</li>
-        <li>Linux & FOSS</li>
-      </ul>
-      <p>Topics I don't like:</p>
-      <ul>
-        <li>Python</li>
-        <li>Windows</li>
-        <li>Steve</li>
-      </ul>
+      <Home />
     </main>
     <Footer />
   </body>
