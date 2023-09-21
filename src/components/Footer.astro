@@ -3,42 +3,54 @@ const today = new Date();
 ---
 
 <footer class="footer">
-	<div class="footer-dedication">
-		<i>I dedicate this blog to the public domain.</i>
-	</div>
 
-
-	<div class="footer-links">
+  <div class="footer-links">
     <a href="https://github.com/romgrk" target="_blank">
       <span class="fa fa-github" />
       <span class="sr-only">Github</span>
     </a>
-	</div>
+  </div>
+
+  <div class="footer-dedication">
+    <div>I dedicate this blog and anyone who reads this sentence to the public domain.</div>
+    <div>What do you mean that's not how licensing works?</div>
+  </div>
+
 </footer>
+
 <style>
-	.footer {
-		padding-top: 3em;
-		padding-bottom: 3em;
+  .footer {
+    padding-top: 3rem;
+    padding-bottom: 4rem;
 
-		color: var(--color-footer-fg);
-		background-color: var(--color-footer-bg);
+    color: var(--color-footer-fg);
+    background-color: var(--color-footer-bg);
 
-		text-align: center;
-	}
+    text-align: center;
+  }
+  .footer > * {
+    margin-bottom: 1em;
+  }
 
-	.footer-dedication {
-		opacity: 0.8;
-	}
+  .footer-copyleft {
+    color: var(--color-muted-2x-fg);
+  }
 
-	.footer-links {
-		display: flex;
-		justify-content: center;
-		gap: 1em;
-		margin-top: 1em;
-	}
-	.footer-links a {
-		text-decoration: none;
-		color: var(--color-body-fg);
-		font-size: 1.5em;
-	}
+  .footer-dedication {
+    display: inline-block;
+    color: var(--color-muted-2x-fg);
+    font-size: 0.8rem;
+    /* text-align: left; */
+  }
+
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 1em;
+  }
+  .footer-links a {
+    text-decoration: none;
+    color: var(--color-muted-fg);
+    font-size: 1.5em;
+  }
 </style>

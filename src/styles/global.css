@@ -1,7 +1,9 @@
 :root {
-  --color-panel-bg: #212121;
-  --color-body-bg:  #262626;
   --color-body-fg:  #dce4f1;
+  --color-body-bg:  #262626;
+  --color-panel-bg: #212121;
+  --color-embed-fg: #edf2fb;
+  --color-embed-bg: #383838;
 
   --color-muted-fg:    #8d9298;
   --color-muted-2x-fg: #6A6E73;
@@ -24,6 +26,10 @@
 /*
  * Reset
  */
+
+* {
+  box-sizing: border-box;
+}
 
 body,
 p,
@@ -67,13 +73,6 @@ strong, b {
 }
 p {
   margin-bottom: 1em;
-}
-
-article h2 {
-  margin-bottom: 1.5rem;
-}
-article p {
-  margin-bottom: 2rem;
 }
 
 /*
@@ -138,6 +137,15 @@ main {
   padding-top:    3rem;
   padding-bottom: 3rem;
 }
+@media (max-width: 720px) {
+  body {
+    font-size: 18px;
+  }
+  main {
+    padding-top:    1rem;
+    padding-bottom: 1rem;
+  }
+}
 
 
 table {
@@ -147,36 +155,6 @@ img {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
-}
-code {
-  padding: 2px 5px;
-  background-color: rgb(var(--gray-light));
-  border-radius: 2px;
-}
-pre {
-  padding: 1.5em;
-  border-radius: 8px;
-}
-pre > code {
-  all: unset;
-}
-blockquote {
-  border-left: 4px solid var(--accent);
-  padding: 0 0 0 20px;
-  margin: 0px;
-  font-size: 1.333em;
-}
-hr {
-  border: none;
-  border-top: 2px solid var(--color-border);
-}
-@media (max-width: 720px) {
-  body {
-    font-size: 18px;
-  }
-  main {
-    padding: 1em;
-  }
 }
 
 .sr-only {
@@ -191,4 +169,61 @@ hr {
   clip: rect(1px, 1px, 1px, 1px);
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+
+.row {
+  display: flex;
+  flex-direction: row;
+}
+.row > * {
+  flex: 1;
+}
+
+
+/*
+ * Posts
+ */
+
+article h2 {
+  font-size: 2rem;
+  margin-top:    3.0rem;
+  margin-bottom: 1.5rem;
+}
+article p {
+  margin-bottom: 2rem;
+}
+
+code {
+  padding: 0.10rem 0.35rem;
+  color: var(--color-embed-fg);
+  background-color: var(--color-embed-bg);
+  border-radius: 4px;
+  font-size: 1.05rem;
+}
+
+.astro-code {
+  padding: 1rem;
+
+  font-size: 1rem;
+  line-height: 1.5;
+
+  border-radius: 5px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-panel-bg) !important;
+}
+.astro-code > code {
+  all: unset;
+}
+
+blockquote {
+  border-left: 4px solid var(--accent);
+  padding: 0 0 0 20px;
+  margin: 0px;
+  font-size: 1.333em;
+}
+
+hr {
+  border: none;
+  border-top: 2px solid var(--color-border);
 }

@@ -1,7 +1,71 @@
 ---
-title: 'The problem with function components'
+title: 'The problem with functional components'
 description: 'romgrk ranting about the deprecation of class components'
 pubDate: 'Sep 21 2023'
 ---
 
+Over the last years, React has been introducing functional component. I'll preface this rant by saying that I've always been a huge fan of functional programming, so I was very happy to see the move. Functional components are simple & neat, and despite everything I'm about to say, I do love them.
 
+The problem is that despite being equivalent in terms of functionality, class and functional components both have advantages in certain use-cases. But React has been gradually phasing out class components, leaving us with no choice but to use functional components for all cases. Yes they say class components are staying. However they've stopped making new features ergonomic & compatible with them, which means that they're staying until you need to integrate with new code that uses hooks—for which there is no compatibility with class components—or that uses context—which is not pleasant to use with class components.
+
+So in which cases are function components more adapted? Let's look at an example. You'll find that the two following component structures are equivalent: there are private fields, then the component state, then the methods, then the rendering.
+
+<div class="row">
+
+```tsx
+class Selector extends Component {
+  // private fields
+  id = cuid()
+  ref = createRef()
+  position = { x: 0, y: 0}
+
+  // state
+  state = {
+    open: false,
+    loading: false,
+    disabled: false,
+    selectedIndex: -1,
+  }
+
+  // methods
+  open() {}
+  close() {}
+  select(index) {}
+  focus() {}
+
+  // result
+  render() {
+    return (
+      /* ... */
+    )
+  }
+}
+```
+
+```tsx
+function Selector(props) {
+  // private fields
+  const id = useRef(cuid())
+  const ref = useRef()
+  const position = useRef({ x: 0, y: 0 })
+
+  // state
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [disabled, setDisabled] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
+
+  // methods
+  const open = useCallback(() => {}, [])
+  const close = useCallback(() => {}, [])
+  const select = useCallback((index) => {}, [])
+  const focus = useCallback(() => {}, [])
+
+  // result
+  return (
+    /* ... */
+  )
+}
+```
+
+</div>
