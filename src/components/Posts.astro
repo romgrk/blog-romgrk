@@ -1,0 +1,71 @@
+---
+import { getCollection } from 'astro:content';
+import FormattedDate from './FormattedDate.astro';
+
+const posts = (await getCollection('blog')).sort(
+	(a, b) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf()
+);
+---
+<section class="posts">
+	{
+		posts.map((post) => (
+			<div class="post">
+				<a href={`/posts/${post.slug}/`}>
+					<h4 class="post-title">{post.data.title}</h4>
+					<p class="post-date">
+						<FormattedDate date={post.data.pubDate} />
+					</p>
+				</a>
+			</div>
+		))
+	}
+</section>
+
+<style>
+	.posts {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 2rem;
+		list-style-type: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.post {
+		width: calc(50% - 1rem);
+	}
+	.post * {
+		text-decoration: none;
+		transition: 0.2s ease;
+	}
+	.post a {
+		display: block;
+	}
+	.post-title {
+		color: var(--color-body-fg);
+		line-height: 1;
+	}
+	.post a:hover .post-title {
+		color: rgb(var(--color-link-fg));
+	}
+	.post-date {
+		color: var(--color-muted-fg);
+		font-size: 1rem;
+	}
+
+	@media (max-width: 720px) {
+		.posts {
+			gap: 0.5em;
+		}
+		.post {
+			width: 100%;
+			text-align: center;
+		}
+		.post:first-child {
+			margin-bottom: 0;
+		}
+		.post:first-child .post-title {
+			font-size: 1.563em;
+		}
+	}
+</style>

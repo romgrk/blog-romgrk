@@ -3,8 +3,13 @@
   --color-body-bg:  #262626;
   --color-body-fg:  #dce4f1;
 
+  --color-muted-fg:  #8d9298;
+
   --color-footer-bg: #101010;
   --color-footer-fg: var(--color-body-fg);
+
+  --color-link-fg: #599eff;
+  --color-selection-bg: rgba(89, 158, 255, 0.2);
 
   --color-border: #2d2d2d;
 
@@ -15,6 +20,17 @@
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;700&display=swap');
+
+/*
+ * Reset
+ */
+
+body,
+p,
+.then {
+  margin: 0;
+  padding: 0;
+}
 
 /*
  * Typography
@@ -50,12 +66,6 @@ strong,
 b {
   font-weight: 700;
 }
-a {
-  color: var(--accent);
-}
-a:hover {
-  color: var(--accent);
-}
 p {
   margin-bottom: 1em;
 }
@@ -82,13 +92,18 @@ h1, h2, h3, h4, h5, h6 {
   /* color: var(--header-color); */
 }
 
-/*
- * Reset
- */
+::selection {
+  background: var(--color-selection-bg);
+}
+::-moz-selection {
+  background: var(--color-selection-bg);
+}
 
-body {
-  margin: 0;
-  padding: 0;
+a {
+  color: var(--color-link-fg);
+}
+a:hover {
+  color: var(--color-link-fg);
 }
 
 /*
@@ -112,21 +127,22 @@ footer {
 
 
 header, main, footer {
-  --content-width: 720px;
+  --content-width: 800px;
 
   padding-left:  calc((100vw - var(--content-width)) / 2);
   padding-right: calc((100vw - var(--content-width)) / 2);
 }
-@media (max-width: 720px) {
+@media (max-width: 820px) {
   header, main, footer {
     --content-width: 500px;
   }
 }
 
 main {
-  padding-top: 2rem;
-  padding-bottom: 2em;
+  padding-top:    3rem;
+  padding-bottom: 3rem;
 }
+
 
 table {
   width: 100%;
