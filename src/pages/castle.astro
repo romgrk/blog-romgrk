@@ -1,0 +1,25 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+  </head>
+  <body>
+    <Header title={SITE_TITLE} />
+    <main>
+      <img src="/castle.jpg" />
+      <br />
+      <br />
+      <p>
+        "The Castle" is a painting by Herman Wenng painted in 1930. I don't know anything about Herman, but I do love this painting very much. But the paiting is basically gone from the public internet, so I share it here in the hopes that the image survives.
+      </p>
+    </main>
+    <Footer />
+  </body>
+</html>
