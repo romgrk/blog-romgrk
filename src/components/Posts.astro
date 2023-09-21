@@ -32,7 +32,8 @@ const posts = (await getCollection('blog')).sort(
 	}
 
 	.post {
-		width: calc(50% - 1rem);
+		/* width: calc(50% - 1rem); */
+		width: 100%;
 	}
 	.post * {
 		text-decoration: none;
@@ -43,7 +44,7 @@ const posts = (await getCollection('blog')).sort(
 	}
 	.post-title {
 		color: var(--color-body-fg);
-		line-height: 1;
+		line-height: 1.2;
 	}
 	.post a:hover .post-title {
 		color: rgb(var(--color-link-fg));

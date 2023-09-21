@@ -50,7 +50,7 @@ h1 {
   font-size: 3.052em;
 }
 h2 {
-  font-size: 2.441em;
+  font-size: 2.3em;
 }
 h3 {
   font-size: 1.953em;
@@ -61,22 +61,18 @@ h4 {
 h5 {
   font-size: 1.25em;
 }
-strong,
-b {
+strong, b {
   font-weight: 700;
 }
 p {
   margin-bottom: 1em;
 }
-.prose p {
-  margin-bottom: 2em;
+
+article h2 {
+  margin-bottom: 1.5rem;
 }
-textarea {
-  width: 100%;
-  font-size: 16px;
-}
-input {
-  font-size: 16px;
+article p {
+  margin-bottom: 2rem;
 }
 
 /*
@@ -171,7 +167,7 @@ blockquote {
 }
 hr {
   border: none;
-  border-top: 1px solid var(--color-border);
+  border-top: 2px solid var(--color-border);
 }
 @media (max-width: 720px) {
   body {
