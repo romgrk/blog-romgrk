@@ -36,7 +36,7 @@ const posts = (await getCollection('blog')).sort(
 	}
 	.post * {
 		text-decoration: none;
-		transition: 0.2s ease;
+    transition: var(--transition);
 	}
 	.post a {
 		display: block;

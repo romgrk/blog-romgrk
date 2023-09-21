@@ -27,12 +27,16 @@ import { SITE_TITLE } from '../consts';
     border-bottom: 2px solid var(--color-border);
   }
   .header a {
-		display: inline-block;
+    display: inline-block;
     text-decoration: none;
     color: var(--color-body-fg);
     height: 4rem;
     display: flex;
     align-items: center;
+    transition: var(--transition);
+  }
+  .header a:hover {
+    color: var(--color-link-fg);
   }
 
   .header-title {
