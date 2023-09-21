@@ -1,4 +1,7 @@
 .random-quote {
-  opacity: 0.8;
+  padding: 1em 0;
+  margin-bottom: 2rem;
+
+  opacity: 0.6;
   white-space: pre-wrap;
 }

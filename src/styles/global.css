@@ -10,6 +10,8 @@
 
   --accent: #2337ff;
   --accent-dark: #000d8a;
+
+  color-scheme: dark;
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;700&display=swap');
@@ -87,9 +89,6 @@ h1, h2, h3, h4, h5, h6 {
 body {
   margin: 0;
   padding: 0;
-  text-align: left;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
 }
 
 /*
@@ -125,8 +124,8 @@ header, main, footer {
 }
 
 main {
-  padding-top: 3em;
-  padding-bottom: 3em;
+  padding-top: 2rem;
+  padding-bottom: 2em;
 }
 
 table {

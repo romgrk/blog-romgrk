@@ -1,0 +1,12 @@
+.random-plant {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.random-plant-svg,
+.random-plant-svg > svg,
+.then {
+  display: inline-block;
+  height: 100px;
+}
