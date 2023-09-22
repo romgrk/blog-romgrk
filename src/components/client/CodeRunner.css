@@ -1,4 +1,5 @@
 .code-runner {
+  position: relative;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -21,4 +22,10 @@
 
   white-space: pre;
   outline: none;
+}
+
+.code-runner-show-context {
+  position: absolute;
+  top: 0;
+  right: 0.75em;
 }

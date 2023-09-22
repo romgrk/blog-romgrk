@@ -11,6 +11,8 @@
   --color-muted-fg:    #8d9298;
   --color-muted-2x-fg: #6A6E73;
 
+  --color-warning-fg:  #e6ad19;
+
   --color-footer-bg: #101010;
   --color-footer-fg: var(--color-body-fg);
 
@@ -100,6 +102,10 @@ a {
 }
 a:hover {
   color: var(--color-link-fg);
+}
+
+.text-warning {
+  color: var(--color-warning-fg);
 }
 
 /*
@@ -205,6 +211,10 @@ button:active {
   background-color: rgba(255, 255, 255, 0.15);
 }
 
+button.sm {
+  font-size: 0.8rem;
+}
+
 /*
  * Posts
  */
@@ -260,4 +270,17 @@ blockquote {
 hr {
   border: none;
   border-top: 2px solid var(--color-border);
+}
+
+/*
+ * Conditional styles
+ */
+
+.if-firefox {
+  display: none;
+}
+@supports (-moz-appearance: none){
+  .if-firefox {
+    display: unset;
+  }
 }

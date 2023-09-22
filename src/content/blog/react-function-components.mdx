@@ -72,17 +72,39 @@ function Selector(props) {
 
 ### Issue #1: Readability is worst
 
-Whereas the class version uses idiomatic javascript syntax, the functional one replicates the **same code structure** by mashing every field, state and method into one huge giant function, where method declaration, field initialization and UI rendering intermingle into one unholy mess.
+Whereas the class version uses idiomatic javascript syntax, the functional one replicates the **same code structure** by mashing every field, state and method into one huge giant function, where method declaration, field initialization and UI rendering intermingle into one ungodly mess.
 
 Add to that the fact that you need to wrap everything in `React.useState`, `React.useMemo` and `React.useCallback`. Every field. Every method. Everywhere.
 
+And the worst? I lied above. To be 100% equivalent you'd need to wrap with `forwardRef` and expose the methods with `useImperativeHandle`:
+
+```tsx
+const Selector = forwardRef(function Selector(props, ref) {
+  /* same as above: fields, state, methods */
+
+  useImperativeHandle(ref, () => ({
+    open,
+    close,
+    select,
+    focus,
+  }), [])
+
+  /* same as above: result */
+})
+
+```
+
 ### Issue #2: DX is worst
+
+<div class="if-firefox text-warning">NOTE: You appear to be on firefox. This section doesn't apply for your browser.</div>
 
 Let's say you're debugging some bug that happens in response to an event. The handler calls down some function. Which calls another. Few levels more. You know where the bug happens. You've set your `debugger` breakpoint, deep down in the stack. What does your call stack look like?
 
 <ExampleStack client:load />
 
-Yup. `useCallback` prevents the function from being assigned directly to a variable, so it's anonymous and the engine can't guess it's name. This is what you get in the devtools everytime you look at your stack calls. Wanna figure what calls resulted in this bug? Go look at every entry of the stack manually.
+Yup. `useCallback` prevents the function from being assigned directly to a variable, so it's anonymous and the engine can't guess it's name*. This is what you get in the devtools everytime you look at your call stack. Wanna figure what calls resulted in this bug? Go look at every entry of the stack manually.
+
+*\* SpiderMonkey is the only exception :O V8 and JSC can't.*
 
 ### Issue #3: Performance is worst
 

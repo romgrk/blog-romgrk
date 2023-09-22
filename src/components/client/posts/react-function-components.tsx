@@ -1,6 +1,12 @@
 import CodeRunner from '../CodeRunner'
 
 export function ExampleStack() {
+  const context = `
+    function printStackTrace() {
+      console.log(new Error().stack)
+    }
+    function useCallback(fn) { return fn }
+  `
   return (
     <div className='row mb-1'>
       <CodeRunner
@@ -14,22 +20,19 @@ export function ExampleStack() {
             c() { this.d() }
             d() { this.e() }
             e() {
-              /* breakpoint */
-              console.log(new Error().stack)
+              printStackTrace()
             }
           }
 
           new Component().a()
         `}
+        context={context}
       />
 
       <CodeRunner
         transformOutput={transformOutput}
         consoleLines={6}
         codeLines={13}
-        context={`
-          function useCallback(fn) { return fn }
-        `}
         code={`
           function Component() {
             const a = useCallback(() => { b() }, [])
@@ -37,14 +40,14 @@ export function ExampleStack() {
             const c = useCallback(() => { d() }, [])
             const d = useCallback(() => { e() }, [])
             const e = useCallback(() => {
-              /* breakpoint */
-              console.log(new Error().stack)
+              printStackTrace()
             }, [])
             return a
           }
 
           Component()()
         `}
+        context={context}
       />
 
     </div>
@@ -118,7 +121,7 @@ const CLASS_VERSION = `
   }
 
   const start = Date.now()
-  const elements = Array.from({ length: 1000 }).map(() => new Selector())
+  const elements = Array.from({ length: 2000 }).map(() => new Selector())
   for (let i = 0; i < 100; i++) {
     elements.forEach(e => e.render())
   }
@@ -146,7 +149,7 @@ const FUNCTION_VERSION = `
   }
 
   const start = Date.now()
-  const elements = Array.from({ length: 1000 }).map((_, i) => (contexts[i] = { value: null, next: null }))
+  const elements = Array.from({ length: 2000 }).map((_, i) => (contexts[i] = { value: null, next: null }))
   for (let i = 0; i < 100; i++) {
     elements.forEach((_, i) => (currentContext = contexts[i], Selector()))
   }

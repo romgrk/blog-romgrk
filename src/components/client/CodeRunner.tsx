@@ -39,8 +39,23 @@ export default function CodeRunner(props: Props) {
       setOutput(props.transformOutput)
   }
 
+  const showContext = () => {
+    alert(outdent.string(props.context ?? ''))
+  }
+
   return (
     <div className='code-runner'>
+      { props.context &&
+        <div className='code-runner-show-context'>
+          <button
+            className='sm'
+            title='The context is code executed before this snippet but not relevant to the example.'
+            onClick={showContext}
+          >
+            Show context
+          </button>
+        </div>
+      }
       <textarea
         style={{
           '--lines': props.codeLines,
