@@ -277,6 +277,12 @@ article h4 {
 article p {
   margin-bottom: 2rem;
 }
+article mark {
+  color: unset;
+  background-color: transparent;
+  border-bottom: 1px dashed var(--color-muted-fg);
+}
+
 
 code {
   padding: 0.10rem 0.35rem;

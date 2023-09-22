@@ -3,10 +3,11 @@ title: 'The problem with functional components'
 description: 'romgrk ranting about the deprecation of class components'
 pubDate: 'Sep 21 2023'
 ---
+import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
 import { ExampleStack, ExamplePerformance } from '../../components/client/posts/react-function-components.tsx'
 
 
-Over the last years, with the introduction of functional components and hooks, React has gradually been phasing out class components. Although I appreciate the introduction of functional components for their simplicity & conciseness, I think that removing class components completely was the wrong decision.
+Over the last years, with the introduction of functional components and hooks, React has gradually been phasing out class components. Although I appreciate the introduction of functional components for their simplicity & conciseness, I think that <mark title="read the addendum">removing class components</mark> was the wrong decision.
 
 Let's look at an example. Below we have equivalent drafts for a `Selector` component in functional and class versions.
 
@@ -121,7 +122,7 @@ const method = useCallback(() => {}, [])
 const derived = useMemo(() => {}, [props.data])
 ```
 
-In addition to those, which are "React's faults", there are also just more allocations by default simply because there is no differentiation between initialization (like you know, `constructor()`) and rendering, so people keep doing allocations like this one:
+In addition to those, which are "React's fault", there are also just more allocations by default because there is no differentiation between initialization (like you know, a `constructor()`) and rendering, so people keep doing allocations like this one:
 
 ```tsx
 /* +1 allocation: inline object */
@@ -139,6 +140,11 @@ Of course if you have a (real) functional component that is just a pure function
 ## Final notes
 
 I wish React would keep class components in. I don't have much hope though. The tendency I've seen from the library in the last years is that they try to actively make it impossible to shoot yourself in the foot (see `dangerouslySetInnerHTML` or `componentWillReceiveProps`) and to have One Right Way to do things. Which makes sense, from their point of view. They're maintaining a library with a huge reach, so the biggest problem from their perspective is to ensure that most people are using the library correctly, and that means making things as simple as possible so those with less experience can use it correctly. They basically baby-proof it. The thing is, by doing so they make it harder to solve hard problems.
+
+<br/>
+<RandomPlant />
+<br/>
+<br/>
 
 <hr/>
 
