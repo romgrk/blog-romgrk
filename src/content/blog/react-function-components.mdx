@@ -73,7 +73,7 @@ function Selector(props) {
 
 ### Issue #1: Readability is worst
 
-Whereas the class version uses idiomatic standard javascript syntax, the functional one replicates the **same code structure** by mashing every field, state and method into one huge giant function, where method declaration, field initialization and UI rendering intermingle into one ungodly mess.
+Whereas the class version uses idiomatic standard javascript syntax, the functional one replicates the **same code structure** by mashing every field, state and method into one huge giant function, where method declaration, field initialization and UI rendering intermingle into one ungodly mess. What tells me there isn't a `if (something) return <Haha />` in-between one of those fields or methods? Nothing. I need to scan everything to know where the rendering part really begins.
 
 And you need to wrap everything in `useState`, `useMemo` and `useCallback`. Every field. Every method. Everywhere.
 

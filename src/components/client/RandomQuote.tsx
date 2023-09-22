@@ -14,6 +14,8 @@ const quotes = [
 
 `You can start your day over at any point.`,
 
+`Life is the dancer, and you are the dance.`,
+
 `
 I leave my human nature to unfold
 according to its destiny. I remain as I am.
@@ -87,6 +89,30 @@ The eye with which I see God is the same with which God sees me. My eye and God'
 `We simply always find ourselves in an unchangeable moment.`,
 
 `
+As soon as you look at the world through an ideology you are finished. No reality fits an ideology. Life is beyond that. … That is why people are always searching for a meaning to life… Meaning is only found when you go beyond meaning. Life only makes sense when you perceive it as mystery and it makes no sense to the conceptualizing mind.
+
+― Anthony de Mello
+`,
+
+`
+You see persons and things not as they are but as you are.
+
+― Anthony de Mello
+`,
+
+`
+People mistakenly assume that their thinking is done by their head; it is actually done by the heart which first dictates the conclusion, then commands the head to provide the reasoning that will defend it.
+
+― Anthony de Mello
+`,
+
+`
+When I heard the sound of the bell ringing, there was no I, and no bell, just the ringing.
+
+― Tony Parsons
+`,
+
+`
 I, Awareness, do not know resistance and am, therefore, peace itself; I seek nothing and am, therefore, happiness itself; and I am intimately one with all appearances and am, as such, love itself.
 
  — Rupert Spira
@@ -111,7 +137,7 @@ Sorcerers say that we are inside a bubble. It is a bubble into which we are plac
 `,
 
 `
-“It is difficult to find happiness within oneself, but it is impossible to find it anywhere else.”
+It is difficult to find happiness within oneself, but it is impossible to find it anywhere else.
 
  ― Arthur Schopenhauer
 `,
@@ -170,22 +196,6 @@ Suppose there is someone who lives very mindfully, dwelling in concentration. Sh
 Take time to find good names and take time to re-factor those names as much as necessary. As a wise stackoverflow user once said, the process of naming makes you face the horrible fact that you have no idea what the hell you're doing.
 
  ― A reddit user
-`,
-
-`
-« Les guerriers de la lumière ont toujours une lueur particulière dans le regard. Ils sont au monde, ils font partie de la vie des autres, et ils ont commencé leur voyage sans besace ni sandales. Il leur arrive souvent d’être lâches, et ils n’agissent pas toujours correctement. Les guerriers de la lumière souffrent pour des causes inutiles, ont des comportements mesquins et parfois se jugent incapables de grandir. Ils se croient fréquemment indignes d’une bénédiction ou d’un miracle. Ils ne savent pas toujours avec certitude ce qu’ils font ici. Souvent, ils passent des nuits éveillés, à penser que leur vie n’a pas de sens. C’est pour cela qu’ils sont guerriers de la lumière. Parce qu’ils se trompent. Parce qu’ils s’interrogent. Parce qu’ils cherchent une raison – et, certainement, ils vont la trouver. »
-
- — Paulo Coehlo, «Manuel du Guerrier de la Lumière»
-`,
-
-`
-« J'ai ainsi eu, au cours de ma vie, des tas de contacts avec des tas de gens sérieux. J'ai beaucoup vécu chez les grandes personnes. Je les ai vues de très près. Ça n'a pas trop amélioré mon opinion. Quand j'en rencontrais une qui me paraissait un peu lucide, je faisais l'expérience sur elle de mon dessin no.1 que j'ai toujours conservé. Je voulais savoir si elle était vraiment compréhensive. Mais toujours elle me répondait: "C'est un chapeau." Alors je ne lui parlais ni de serpents boas, ni de forêts vierges, ni d'étoiles. Je me mettais à sa portée. Je lui parlais de bridge, de golf, de politique et de cravates. Et la grande personne était bien contente de connaître un homme aussi raisonnable. »
-`,
-
-`
-« Le militant qui cherche avec un esprit libre et ouvert, qui ne connaît pas la certitude, qui hait le dogme, trouve dans le rire, non seulement une façon de garder l’esprit sain, mais également une clé qui lui permet de comprendre la vie. Pour un tacticien, l’humour est un élément essentiel de succès car les armes les plus puissantes du monde sont la satire et le ridicule. Le sens de l’humour permet de garder une juste perspective des choses et de prendre la réalité pour ce qu’elle est, une pincée de poussière qui brûle en l’espace d’une seconde. »
-
- — Saul Alinsky
 `,
 
 `
