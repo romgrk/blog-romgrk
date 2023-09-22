@@ -13,6 +13,7 @@ type Props = {
 
 const globalScope = typeof window !== 'undefined' ? window as any : {} as any
 const originalConsole = globalScope.console
+const indirectEval = globalScope.eval
 
 export default function CodeRunner(props: Props) {
   const [code, setCode] = useState(outdent.string(props.code))
@@ -31,7 +32,7 @@ export default function CodeRunner(props: Props) {
 
     globalScope.console = console
     try {
-      eval((props.context ?? '') + ';' + code)
+      indirectEval((props.context ?? '') + ';' + code)
     } catch (err: any) {
       console.log(err.message)
     }
