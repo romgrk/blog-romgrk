@@ -1,9 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;700&display=swap');
+
 :root {
   --color-body-fg:  #dce4f1;
   --color-body-bg:  #262626;
   --color-panel-bg: #212121;
   --color-embed-fg: #edf2fb;
   --color-embed-bg: #383838;
+  --color-embed-border: #454545;
 
   --color-muted-fg:    #8d9298;
   --color-muted-2x-fg: #6A6E73;
@@ -20,8 +23,6 @@
 
   color-scheme: dark;
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;700&display=swap');
 
 /*
  * Reset
@@ -180,14 +181,47 @@ img {
   flex: 1;
 }
 
+.mb-1 {
+  margin-bottom: 1rem;
+}
+
+/*
+ * Elements
+ */
+
+button {
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  border: none;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+button:focus,
+button:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+button:active {
+  background-color: rgba(255, 255, 255, 0.15);
+}
 
 /*
  * Posts
  */
 
 article h2 {
-  font-size: 2rem;
+  font-size:     2rem;
   margin-top:    3.0rem;
+  margin-bottom: 1.5rem;
+}
+article h3 {
+  font-size:     1.6rem;
+  margin-top:    2.0rem;
+  margin-bottom: 1.5rem;
+}
+article h4 {
+  font-size:     1.2rem;
+  margin-top:    2.0rem;
   margin-bottom: 1.5rem;
 }
 article p {

@@ -3,14 +3,14 @@ title: 'The problem with functional components'
 description: 'romgrk ranting about the deprecation of class components'
 pubDate: 'Sep 21 2023'
 ---
+import { ExampleStack } from '../../components/client/posts/react-function-components.tsx'
 
-Over the last years, React has been introducing functional component. I'll preface this rant by saying that I've always been a huge fan of functional programming, so I was very happy to see the move. Functional components are simple & neat, and despite everything I'm about to say, I do love them.
 
-The problem is that despite being equivalent in terms of functionality, class and functional components both have advantages in certain use-cases. But React has been gradually phasing out class components, leaving us with no choice but to use functional components for all cases. Yes they say class components are staying. However they've stopped making new features ergonomic & compatible with them, which means that they're staying until you need to integrate with new code that uses hooks—for which there is no compatibility with class components—or that uses context—which is not pleasant to use with class components.
+Over the last years, with the introduction of functional components and hooks, React has gradually been phasing out class components. Although I appreciate the introduction of functional components for their simplicity & conciseness, I think that removing class components completely was the wrong decision.
 
-So in which cases are function components more adapted? Let's look at an example. You'll find that the two following component structures are equivalent: there are private fields, then the component state, then the methods, then the rendering.
+Let's look at an example. Below we have the same draft for a `Selector` component in functional and class versions.
 
-<div class="row">
+<div class="row mb-1">
 
 ```tsx
 class Selector extends Component {
@@ -69,3 +69,17 @@ function Selector(props) {
 ```
 
 </div>
+
+### Issue #1: Readability is worst
+
+Whereas the class version uses idiomatic javascript syntax, the functional one replicates the **same code structure** by mashing every field, state and method into one huge giant function, where method declaration, field initialization and UI rendering intermingle into one unholy mess.
+
+Add to that the fact that you need to wrap everything in `React.useState`, `React.useMemo` and `React.useCallback`. Every field. Every method. Everywhere.
+
+### Issue #2: DX is worst
+
+Let's say you're debugging some bug that happens in response to an event. The handler calls down some function. Which calls another. Few levels more. You know where the bug happens. You've set your `debugger` breakpoint, deep down in the stack. What does your call stack look like?
+
+<ExampleStack client:load />
+
+Yup. `useCallback` prevents the function from being assigned directly to a variable, so it's anonymous and the engine can't guess it's name. This is what you get in the devtools everytime you look at your stack calls. Wanna figure what calls resulted in this bug? Go look at every entry of the stack manually.

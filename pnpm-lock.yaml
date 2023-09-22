@@ -18,19 +18,22 @@ dependencies:
     specifier: ^2.0.2
     version: 2.0.2
   '@types/react':
-    specifier: ^18.0.21
+    specifier: ^18.2.22
     version: 18.2.22
   '@types/react-dom':
-    specifier: ^18.0.6
+    specifier: ^18.2.7
     version: 18.2.7
   astro:
     specifier: ^2.10.14
     version: 2.10.14
+  outdent:
+    specifier: ^0.8.0
+    version: 0.8.0
   react:
     specifier: ^18.2.0
     version: 18.2.0
   react-dom:
-    specifier: ^18.0.0
+    specifier: ^18.2.0
     version: 18.2.0(react@18.2.0)
 
 packages:
@@ -2955,6 +2958,10 @@ packages:
       stdin-discarder: 0.1.0
       strip-ansi: 7.1.0
       wcwidth: 1.0.1
+    dev: false
+
+  /outdent@0.8.0:
+    resolution: {integrity: sha512-KiOAIsdpUTcAXuykya5fnVVT+/5uS0Q1mrkRHcF89tpieSmY33O/tmc54CqwA+bfhbtEfZUNLHaPUiB9X3jt1A==}
     dev: false
 
   /p-limit@2.3.0:
