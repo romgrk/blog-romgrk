@@ -3,7 +3,7 @@ title: 'The problem with functional components'
 description: 'romgrk ranting about the deprecation of class components'
 pubDate: 'Sep 21 2023'
 ---
-import { ExampleStack } from '../../components/client/posts/react-function-components.tsx'
+import { ExampleStack, ExamplePerformance } from '../../components/client/posts/react-function-components.tsx'
 
 
 Over the last years, with the introduction of functional components and hooks, React has gradually been phasing out class components. Although I appreciate the introduction of functional components for their simplicity & conciseness, I think that removing class components completely was the wrong decision.
@@ -83,3 +83,25 @@ Let's say you're debugging some bug that happens in response to an event. The ha
 <ExampleStack client:load />
 
 Yup. `useCallback` prevents the function from being assigned directly to a variable, so it's anonymous and the engine can't guess it's name. This is what you get in the devtools everytime you look at your stack calls. Wanna figure what calls resulted in this bug? Go look at every entry of the stack manually.
+
+### Issue #3: Performance is worst
+
+This one is obvious. Every time your component re-renders, it needs to make:
+
+```tsx
+/* +1 allocation: inline object */
+const cache = useRef({})
+
+/* +1 allocation: return array */
+const [state, setState] = useState(false)
+
+/* +2 allocations: inline closure, dependency array */
+const method = useCallback(() => {}, [])
+
+/* +2 allocations: inline closure, dependency array */
+const derived = useMemo(() => {}, [props.data])
+```
+
+Don't think it matters enough?
+
+<ExamplePerformance client:load />
