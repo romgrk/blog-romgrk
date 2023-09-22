@@ -1,7 +1,7 @@
 ---
 title: 'The problem with functional components'
 description: 'romgrk ranting about the deprecation of class components'
-pubDate: 'Sep 21 2023'
+pubDate: 'Sep 22 2023'
 ---
 import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
 import { ExampleStack, ExamplePerformance } from '../../components/client/posts/react-functional-components.tsx'
@@ -139,7 +139,7 @@ Of course if you have a (real) functional component that is just a pure function
 
 ## Final notes
 
-I wish React would keep class components in. I don't have much hope though. The tendency I've seen from the library in the last years is to forcefully make it impossible to shoot yourself in the foot (see the removal of `componentWillReceiveProps`) and to have One Right Way to do things. Which makes sense, from their point of view. They're maintaining a library with a huge reach, so the biggest problem from their perspective is to ensure that people are using the library correctly. And that means making things as simple as possible so those with less experience can use it correctly. They baby-proof it. The thing is, by doing so they make it harder to solve hard problems.
+I'm a huge fan of functional programming. It's fun, it's elegant, it's like mathematics. When I discovered it, I declared OOP dead and saw no future but FP. But of course, neither OOP nor FP are the full Truth. They're both ways to express the same fundamental operations, and like emptiness and form, appear separate but are in reality the same thing. You can use one in some cases, and the other in some cases. Objects and closures are equivalent (go ask C++, it will tell you). Now, I wish React would keep class components. I don't have much hope though. It seems like the maintainers in the last years are forcefully making it impossible to shoot yourself in the foot (see the removal of `componentWillReceiveProps`) and to have One Right Way to do things. Which makes sense, from their point of view. They're maintaining a library with a huge reach. They get all sort of reports from people with very varying levels of skill. So the biggest problem from their perspective is to ensure that people are using the library correctly. And that means making things as simple as possible so those with less experience can use it correctly. They baby-proof it. The thing is, by doing so they make it harder to solve hard problems.
 
 <br/>
 <RandomPlant />
