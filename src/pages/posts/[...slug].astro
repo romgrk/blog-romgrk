@@ -13,7 +13,7 @@ const { slug } = Astro.params;
 
 const post = posts.find((page) => page.slug === slug);
 if (!post)
-  return Astro.redirect("/404");
+  return Astro.redirect('/404');
 
 const { Content } = await post.render();
 
