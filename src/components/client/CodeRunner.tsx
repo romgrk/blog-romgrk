@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Dialog } from '@headlessui/react'
 import outdent from 'outdent'
 import './CodeRunner.css'
 
@@ -15,6 +16,7 @@ const originalConsole = globalScope.console
 
 export default function CodeRunner(props: Props) {
   const [code, setCode] = useState(outdent.string(props.code))
+  const [isOpen, setIsOpen] = useState(false)
   const [output, setOutput] = useState('')
 
   const console = {
@@ -39,10 +41,6 @@ export default function CodeRunner(props: Props) {
       setOutput(props.transformOutput)
   }
 
-  const showContext = () => {
-    alert(outdent.string(props.context ?? ''))
-  }
-
   return (
     <div className='code-runner'>
       { props.context &&
@@ -50,10 +48,28 @@ export default function CodeRunner(props: Props) {
           <button
             className='sm'
             title='The context is code executed before this snippet but not relevant to the example.'
-            onClick={showContext}
+            onClick={() => setIsOpen(true)}
           >
             Show context
           </button>
+          <Dialog className='modal' open={isOpen} onClose={() => setIsOpen(false)}>
+            <div className='modal-backdrop' onClick={() => setIsOpen(false)}></div>
+            <div className='modal-panel'>
+              <Dialog.Panel>
+                <Dialog.Title>Code runner context</Dialog.Title>
+                <Dialog.Description>
+                  The context code is run before the snippet inside the code runner is executed.
+                  It contains code that isn't directly relevant to the example.
+                </Dialog.Description>
+
+                <pre>{outdent.string(props.context ?? '')}</pre>
+
+                <div className='modal-actions'>
+                  <button onClick={() => setIsOpen(false)}>Close</button>
+                </div>
+              </Dialog.Panel>
+            </div>
+          </Dialog>
         </div>
       }
       <textarea

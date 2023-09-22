@@ -71,17 +71,12 @@ let currentContext = null
 const contexts = []
 
 function nextContext() {
-  if (!currentContext.next) {
-    currentContext.next = { value: null, next: null }
-  }
-  return (currentContext = currentContext.next)
+  return (currentContext = currentContext.next ??= { value: null, next: null })
 }
 
 function useRef() {
   nextContext()
-  if (currentContext.value)
-    return currentContext.value
-  return (currentContext.value = { current: null })
+  return (currentContext.value ??= { current: null })
 }
 function useState(s) {
   nextContext()
@@ -91,9 +86,7 @@ function useState(s) {
 }
 function useCallback(fn, d) {
   nextContext()
-  if (currentContext.value)
-    return currentContext.value
-  return (currentContext.value = fn)
+  return (currentContext.value ??= fn)
 }
 `
 
@@ -121,12 +114,13 @@ const CLASS_VERSION = `
   }
 
   const start = Date.now()
-  const elements = Array.from({ length: 2000 }).map(() => new Selector())
-  for (let i = 0; i < 100; i++) {
+  const elements = Array.from({ length: 3000 })
+    .map(() => new Selector())
+  for (let i = 0; i < 5; i++) {
     elements.forEach(e => e.render())
   }
   const end = Date.now()
-  console.log((end - start)/100 + 'ms')
+  console.log((end - start) + 'ms')
 `
 
 const FUNCTION_VERSION = `
@@ -149,12 +143,13 @@ const FUNCTION_VERSION = `
   }
 
   const start = Date.now()
-  const elements = Array.from({ length: 2000 }).map((_, i) => (contexts[i] = { value: null, next: null }))
-  for (let i = 0; i < 100; i++) {
+  const elements = Array.from({ length: 3000 })
+    .map((_, i) => (contexts[i] = { value: null, next: null }))
+  for (let i = 0; i < 5; i++) {
     elements.forEach((_, i) => (currentContext = contexts[i], Selector()))
   }
   const end = Date.now()
-  console.log((end - start)/100 + 'ms')
+  console.log((end - start) + 'ms')
 `
 
 
@@ -165,11 +160,13 @@ export function ExamplePerformance() {
       <CodeRunner
         context={CONTEXT}
         code={CLASS_VERSION}
+        codeLines={10}
       />
 
       <CodeRunner
         context={CONTEXT}
         code={FUNCTION_VERSION}
+        codeLines={10}
       />
 
     </div>

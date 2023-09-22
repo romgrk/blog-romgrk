@@ -8,13 +8,13 @@ import { ExampleStack, ExamplePerformance } from '../../components/client/posts/
 
 Over the last years, with the introduction of functional components and hooks, React has gradually been phasing out class components. Although I appreciate the introduction of functional components for their simplicity & conciseness, I think that removing class components completely was the wrong decision.
 
-Let's look at an example. Below we have the same draft for a `Selector` component in functional and class versions.
+Let's look at an example. Below we have equivalent drafts for a `Selector` component in functional and class versions.
 
 <div class="row mb-1">
 
 ```tsx
 class Selector extends Component {
-  // private fields
+  // fields
   id = cuid()
   ref = createRef()
   position = { x: 0, y: 0}
@@ -44,7 +44,7 @@ class Selector extends Component {
 
 ```tsx
 function Selector(props) {
-  // private fields
+  // fields
   const id = useRef(cuid())
   const ref = useRef()
   const position = useRef({ x: 0, y: 0 })
@@ -74,7 +74,7 @@ function Selector(props) {
 
 Whereas the class version uses idiomatic javascript syntax, the functional one replicates the **same code structure** by mashing every field, state and method into one huge giant function, where method declaration, field initialization and UI rendering intermingle into one ungodly mess.
 
-Add to that the fact that you need to wrap everything in `React.useState`, `React.useMemo` and `React.useCallback`. Every field. Every method. Everywhere.
+And you need to wrap everything in `useState`, `useMemo` and `useCallback`. Every field. Every method. Everywhere.
 
 And the worst? I lied above. To be 100% equivalent you'd need to wrap with `forwardRef` and expose the methods with `useImperativeHandle`:
 
@@ -111,9 +111,6 @@ Yup. `useCallback` prevents the function from being assigned directly to a varia
 This one is obvious. Every time your component re-renders, it needs to make:
 
 ```tsx
-/* +1 allocation: inline object */
-const cache = useRef({})
-
 /* +1 allocation: return array */
 const [state, setState] = useState(false)
 
@@ -124,6 +121,27 @@ const method = useCallback(() => {}, [])
 const derived = useMemo(() => {}, [props.data])
 ```
 
-Don't think it matters enough?
+In addition to those, which are "React's faults", there are also just more allocations by default simply because there is no differentiation between initialization (like you know, `constructor()`) and rendering, so people keep doing allocations like this one:
+
+```tsx
+/* +1 allocation: inline object */
+const position = useRef({ x: 0, y: 0})
+```
+
+Anyway let's test it with my poor man's implementation of react hooks. It's accurate in terms of performance overhead, the react hooks implementation also uses a linked list (click Show Context to see the implementation).
 
 <ExamplePerformance client:load />
+
+Alright, I'll admit that the use-case (3000 components, render 5x) is a bit of a stretch, and that the impact for the large majority of applications is irrelevant. But in some cases, it does. You're running this on a fast computer, what would be the result on a low-end device? What happens when you do get to those stretching use-cases? Then you don't have a choice but to use the wasteful functional components.
+
+Of course if you have a (real) functional component that is just a pure function `Component :: props -> UI` with no state & hooks, then for sure the functional one is faster. Functional components do have a place, they're excellent for simple use-cases. But there's more than just simple use-cases in life..
+
+## Final notes
+
+I wish React would keep class components in. I don't have much hope though. The tendency I've seen from the library in the last years is that they try to actively make it impossible to shoot yourself in the foot (see `dangerouslySetInnerHTML` or `componentWillReceiveProps`) and to have One Right Way to do things. Which makes sense, from their point of view. They're maintaining a library with a huge reach, so the biggest problem from their perspective is to ensure that most people are using the library correctly, and that means making things as simple as possible so those with less experience can use it correctly. They basically baby-proof it. The thing is, by doing so they make it harder to solve hard problems.
+
+<hr/>
+
+### Addendum: *"but they're not removing class components"*
+
+Any code written with hooks cannot be used from class components, therefore it's not possible to write new code with classes because the default style is functional components. The maintainers have also stopped making things usable. It's not possible to use more than one context in a class component (at least in an ergonomic way). And all the new improvements (e.g. `useEffect`: running something when a specific set of state/props changes) are also not included in the class components API. So yes, they're removing them.
