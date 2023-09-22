@@ -6,7 +6,7 @@ import react from "@astrojs/react";
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://example.com',
+  site: 'https://romgrk.com',
   integrations: [mdx(), sitemap(), react()],
   markdown: {
     shikiConfig: {
