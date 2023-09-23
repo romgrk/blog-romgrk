@@ -5,9 +5,9 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import BlogPost from '../../components/BlogPost.astro';
 
-const posts = await getCollection('blog');
+const posts = await getCollection('posts');
 
-type Props = CollectionEntry<'blog'>;
+type Props = CollectionEntry<'posts'>;
 
 const { slug } = Astro.params;
 
