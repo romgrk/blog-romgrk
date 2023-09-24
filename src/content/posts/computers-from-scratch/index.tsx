@@ -53,3 +53,56 @@ export function DemoTransistor() {
     </div>
   )
 }
+
+export function DemoAndGate() {
+  const ref = useRef<SVGSVGElement>(null)
+
+  useEffect(() => {
+    const svg = ref.current!
+    const dimensions = svg.getBoundingClientRect()
+    const c = new Context(svg)
+
+    const size = 60
+    const x = dimensions.width  / 2 - size / 2
+    const y = 100
+
+    const circuit = new Circuit(c)
+
+    const ta = new Transistor(x - 100, y)
+    circuit.add(ta)
+    const tb = new Transistor(x + 100, y)
+    circuit.add(tb)
+
+    const power = new Battery(x - 260, y, { canToggle: false })
+    circuit.add(power)
+
+    const a = new Battery(x - 100, y + power.size * 2, { label: 'A' })
+    circuit.add(a)
+
+    const b = new Battery(x + 100, y + power.size * 2, { label: 'B' })
+    circuit.add(b)
+
+    const led = new Light(x + 260, y)
+    circuit.add(led)
+
+    circuit.link(power.output, ta.input)
+    circuit.link(a.output, ta.control)
+    circuit.link(ta.output, tb.input)
+    circuit.link(b.output, tb.control)
+    circuit.link(tb.output, led.input)
+
+    // circuit.link(t.output, led.input)
+
+    circuit.draw()
+
+    return () => {
+      svg.innerHTML = ''
+    }
+  }, [])
+
+  return (
+    <div>
+      <svg className={cx.canvas} width='100%' height='300' ref={ref} />
+    </div>
+  )
+}
