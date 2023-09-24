@@ -32,6 +32,9 @@ dependencies:
   astro:
     specifier: ^3.1.2
     version: 3.1.2
+  eventemitter3:
+    specifier: ^5.0.1
+    version: 5.0.1
   outdent:
     specifier: ^0.8.0
     version: 0.8.0
@@ -1722,6 +1725,10 @@ packages:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
     dependencies:
       '@types/estree': 1.0.1
+    dev: false
+
+  /eventemitter3@5.0.1:
+    resolution: {integrity: sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==}
     dev: false
 
   /execa@8.0.1:
