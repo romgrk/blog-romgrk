@@ -256,19 +256,22 @@ export class Battery extends EventEmitter<CircuitEvents>
   size: number = 55
   seed = newSeed()
   output: Output
-  canToggle: boolean
+  options: { canToggle?: boolean, label?: string }
 
   constructor(
     x: number,
     y: number,
-    options: { canToggle?: boolean } = {}
+    options: Battery['options'] = {}
   ) {
     super()
     this.x = x
     this.y = y
     this.output = new Output(this)
-    this.canToggle = options.canToggle ?? true
-    if (!this.canToggle)
+    this.options = {
+      canToggle: true,
+      ...options,
+    }
+    if (!this.options.canToggle)
       this.output.set(true)
   }
 
@@ -282,7 +285,7 @@ export class Battery extends EventEmitter<CircuitEvents>
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
     g.setAttribute('transform', `translate(${x - size / 2}, ${y - size / 2})`)
 
-    if (this.canToggle) {
+    if (this.options.canToggle) {
       g.setAttribute('style', 'cursor: pointer')
       g.addEventListener('click', this.toggle)
     }
@@ -302,8 +305,10 @@ export class Battery extends EventEmitter<CircuitEvents>
       c.createText(
         size / 2,
         size / 2 + textHeight / 4,
-        !this.canToggle ?
+        !this.options.canToggle ?
           'Power' :
+        this.options.label ?
+          this.options.label :
         this.output.enabled ?
           'ON' : 'OFF',
         { textAnchor: 'middle', fill: color }
