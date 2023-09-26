@@ -5,10 +5,8 @@ import {
   Circuit,
   Light,
   Transistor,
-} from './drawing'
+} from '../../circuit/drawing'
 import cx from './index.module.css'
-
-const padding = 40
 
 export function DemoTransistor() {
   const ref = useRef<SVGSVGElement>(null)

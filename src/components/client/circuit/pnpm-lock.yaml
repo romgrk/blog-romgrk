@@ -1,0 +1,47 @@
+lockfileVersion: '6.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+dependencies:
+  eventemitter3:
+    specifier: ^5.0.1
+    version: 5.0.1
+  roughjs:
+    specifier: ^4.6.3
+    version: 4.6.3
+
+packages:
+
+  /eventemitter3@5.0.1:
+    resolution: {integrity: sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==}
+    dev: false
+
+  /hachure-fill@0.4.0:
+    resolution: {integrity: sha512-adAAzV4vgE5BBkeimtSPMkTARn6XFoV8vhel4C4S/B+cC7XNZGXyU3Fb2zNBz0PgYHkLLWWSL0CRSSnC+Xcw5g==}
+    dev: false
+
+  /path-data-parser@0.1.0:
+    resolution: {integrity: sha512-NOnmBpt5Y2RWbuv0LMzsayp3lVylAHLPUTut412ZA3l+C4uw4ZVkQbjShYCQ8TCpUMdPapr4YjUqLYD6v68j+w==}
+    dev: false
+
+  /points-on-curve@0.2.0:
+    resolution: {integrity: sha512-0mYKnYYe9ZcqMCWhUjItv/oHjvgEsfKvnUTg8sAtnHr3GVy7rGkXCb6d5cSyqrWqL4k81b9CPg3urd+T7aop3A==}
+    dev: false
+
+  /points-on-path@0.2.1:
+    resolution: {integrity: sha512-25ClnWWuw7JbWZcgqY/gJ4FQWadKxGWk+3kR/7kD0tCaDtPPMj7oHu2ToLaVhfpnHrZzYby2w6tUA0eOIuUg8g==}
+    dependencies:
+      path-data-parser: 0.1.0
+      points-on-curve: 0.2.0
+    dev: false
+
+  /roughjs@4.6.3:
+    resolution: {integrity: sha512-gKMI0rHr09711GCDPhm6Qvra40lG7frUG7h1LzYC5i1voCo43oSRtB+dR+n/52Tsn8WjsJC/P7S4BmK3M8SbjA==}
+    dependencies:
+      hachure-fill: 0.4.0
+      path-data-parser: 0.1.0
+      points-on-curve: 0.2.0
+      points-on-path: 0.2.1
+    dev: false

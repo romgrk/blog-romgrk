@@ -32,9 +32,6 @@ dependencies:
   astro:
     specifier: ^3.1.2
     version: 3.1.2
-  eventemitter3:
-    specifier: ^5.0.1
-    version: 5.0.1
   outdent:
     specifier: ^0.8.0
     version: 0.8.0
@@ -44,9 +41,6 @@ dependencies:
   react-dom:
     specifier: ^18.2.0
     version: 18.2.0(react@18.2.0)
-  roughjs:
-    specifier: ^4.6.1
-    version: 4.6.1
 
 packages:
 
@@ -1727,10 +1721,6 @@ packages:
       '@types/estree': 1.0.1
     dev: false
 
-  /eventemitter3@5.0.1:
-    resolution: {integrity: sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==}
-    dev: false
-
   /execa@8.0.1:
     resolution: {integrity: sha512-VyhnebXciFV2DESc+p6B+y0LjSm0krU4OgJN44qFAhBY0TJ+1V61tYD2+wHusZ6F9n5K+vl8k0sTy7PEfV4qpg==}
     engines: {node: '>=16.17'}
@@ -1882,10 +1872,6 @@ packages:
       kind-of: 6.0.3
       section-matter: 1.0.0
       strip-bom-string: 1.0.0
-    dev: false
-
-  /hachure-fill@0.4.0:
-    resolution: {integrity: sha512-adAAzV4vgE5BBkeimtSPMkTARn6XFoV8vhel4C4S/B+cC7XNZGXyU3Fb2zNBz0PgYHkLLWWSL0CRSSnC+Xcw5g==}
     dev: false
 
   /has-flag@3.0.0:
@@ -3037,10 +3023,6 @@ packages:
     resolution: {integrity: sha512-Ofn/CTFzRGTTxwpNEs9PP93gXShHcTq255nzRYSKe8AkVpZY7e1fpmTfOyoIvjP5HG7Z2ZM7VS9PPhQGW2pOpw==}
     dev: false
 
-  /path-data-parser@0.1.0:
-    resolution: {integrity: sha512-NOnmBpt5Y2RWbuv0LMzsayp3lVylAHLPUTut412ZA3l+C4uw4ZVkQbjShYCQ8TCpUMdPapr4YjUqLYD6v68j+w==}
-    dev: false
-
   /path-exists@4.0.0:
     resolution: {integrity: sha512-ak9Qy5Q7jYb2Wwcey5Fpvg2KoAc/ZIhLSLOSBmRmygPsGwkVVt0fZa0qrtMz+m6tJTAHfZQ8FnmB4MG4LWy7/w==}
     engines: {node: '>=8'}
@@ -3091,17 +3073,6 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       find-up: 4.1.0
-    dev: false
-
-  /points-on-curve@0.2.0:
-    resolution: {integrity: sha512-0mYKnYYe9ZcqMCWhUjItv/oHjvgEsfKvnUTg8sAtnHr3GVy7rGkXCb6d5cSyqrWqL4k81b9CPg3urd+T7aop3A==}
-    dev: false
-
-  /points-on-path@0.2.1:
-    resolution: {integrity: sha512-25ClnWWuw7JbWZcgqY/gJ4FQWadKxGWk+3kR/7kD0tCaDtPPMj7oHu2ToLaVhfpnHrZzYby2w6tUA0eOIuUg8g==}
-    dependencies:
-      path-data-parser: 0.1.0
-      points-on-curve: 0.2.0
     dev: false
 
   /postcss@8.4.28:
@@ -3381,15 +3352,6 @@ packages:
     hasBin: true
     optionalDependencies:
       fsevents: 2.3.3
-    dev: false
-
-  /roughjs@4.6.1:
-    resolution: {integrity: sha512-35KoemRoihvZgkIxFxEBzGNdm9iNnas6HuPZd5fnllahB4C0gSccDKZ/5CoPsPYcRAtlSVb2JuJt8Vtr+Vk6sQ==}
-    dependencies:
-      hachure-fill: 0.4.0
-      path-data-parser: 0.1.0
-      points-on-curve: 0.2.0
-      points-on-path: 0.2.1
     dev: false
 
   /run-parallel@1.2.0:
