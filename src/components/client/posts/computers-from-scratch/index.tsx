@@ -26,17 +26,17 @@ export function DemoTransistor() {
       const t = new Transistor(x, y)
       circuit.add(t)
 
-      const power = new Battery(x - 200, y, { canToggle: false })
+      const power = new Battery(x - 200, y, { canToggle: false, label: '+5v' })
       circuit.add(power)
 
-      const control = new Battery(x, y + power.size * 2)
+      const control = new Battery(x, y + power.size * 2, { edge: 'top' })
       circuit.add(control)
 
       const led = new Light(x + 200, y)
       circuit.add(led)
 
-      circuit.link(power, t.input)
-      circuit.link(control, t.control)
+      circuit.link(power.output, t.input)
+      circuit.link(control.output, t.control)
       circuit.link(t.output, led.input)
     })
     circuit.draw()

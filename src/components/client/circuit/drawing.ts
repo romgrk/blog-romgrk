@@ -1,11 +1,31 @@
 import rough from 'roughjs'
 import EventEmitter from 'eventemitter3'
-import { point, segment, vector, Point, Segment } from 'romgrk-2d-geometry'
+import {
+  box,
+  point,
+  segment,
+  vector,
+  Point,
+  Segment,
+  Box,
+  Shape,
+  intersectSegment2Box,
+} from 'romgrk-2d-geometry'
+import { EMPTY_ARRAY } from './prelude'
 import * as logic from './logic'
 import './circuit.css'
 
 type RC = ReturnType<typeof rough.svg>
 type Options = Parameters<RC['line']>[4]
+type EdgeName =
+  | 'top'
+  | 'top-left'
+  | 'top-right'
+  | 'bottom'
+  | 'bottom-left'
+  | 'bottom-right'
+  | 'left'
+  | 'right'
 
 const tau = Math.PI * 2
 
@@ -13,6 +33,7 @@ const textHeight = 18
 
 const COLOR_ON  = 'yellow'
 const COLOR_OFF = '#aaa'
+const COLOR_LINK_OFF = '#555'
 
 export class Context {
   rc: RC
@@ -75,20 +96,15 @@ type CircuitEvents = {
   redraw: () => void,
 }
 
-interface Shape {
+interface Bounded {
+  shape: Shape<Box>
   // x: number
   // y: number
   // size: number
 }
 
-interface CircuitComponent {
-  seed: number
-  draw(c: Context): SVGElement
-  on(e: 'redraw', f: Function): void
-}
-
 export class Circuit {
-  elements: CircuitComponent[]
+  elements: BaseElement<any>[]
   cache: Map<any, SVGElement>
   requests: Set<any>
   context: Context
@@ -133,10 +149,11 @@ export class Circuit {
     cancelAnimationFrame(this.redrawFrame)
   }
 
-  add(e: CircuitComponent) {
+  add(e: BaseElement<any>) {
     this.elements.push(e)
     // FIXME: clear resources
     e.on('redraw', this.scheduleElement.bind(null, e))
+    e.children.forEach(c => this.add(c))
     return e
   }
 
@@ -144,11 +161,11 @@ export class Circuit {
     return this.add(new Link(input, output))
   }
 
-  scheduleElement = (e: CircuitComponent) => {
+  scheduleElement = (e: BaseElement<any>) => {
     this.requests.add(e)
   }
 
-  drawElement = (e: CircuitComponent) => {
+  drawElement = (e: BaseElement<any>) => {
     this.cache.get(e)?.remove()
     const child = e.draw(this.context)
     this.context.svg.appendChild(child)
@@ -160,11 +177,13 @@ export class Circuit {
   }
 }
 
-class BaseElement<T = {}> extends EventEmitter<CircuitEvents & T> {
+abstract class BaseElement<T = {}> extends EventEmitter<CircuitEvents & T> {
   seed = newSeed()
+  children = EMPTY_ARRAY as BaseElement<any>[]
+  abstract draw(_: Context): SVGElement
 }
 
-class Link extends BaseElement implements CircuitComponent {
+class Link extends BaseElement {
   size: number = -1
   input: Input
   output: Output
@@ -179,6 +198,7 @@ class Link extends BaseElement implements CircuitComponent {
     this.output = output
     this.logic = new logic.Link(output.logic, input.logic)
     this.logic.on('update', () => this.emit('redraw'))
+    this.logic.length = vector(this.output.position, this.input.position).length
   }
 
   draw(c: Context) {
@@ -190,7 +210,7 @@ class Link extends BaseElement implements CircuitComponent {
     const line = segment(start, end)
     const v = vector(start, end)
 
-    g.appendChild(c.createArrow([line], { stroke: COLOR_OFF, seed: this.seed }))
+    g.appendChild(c.createArrow([line], { stroke: COLOR_LINK_OFF, seed: this.seed }))
 
     this.logic.streams.forEach(stream => {
       const fStart = stream[0] / this.logic.length
@@ -223,7 +243,7 @@ class Input extends BaseElement<{ change: (value: boolean) => void }> {
     super()
     this.position = p
     this.logic = new logic.Input()
-    this.logic.on('change', v => this.emit('change', v))
+    this.logic.on('change', () => this.emit('redraw'))
   }
 
   get enabled() {
@@ -232,6 +252,20 @@ class Input extends BaseElement<{ change: (value: boolean) => void }> {
 
   set(enabled: boolean) {
     this.logic.set(enabled)
+  }
+
+  draw(c: Context) {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+
+    g.appendChild(c.rc.circle(this.position.x, this.position.y, 10, {
+      strokeWidth: 0,
+      fill: this.enabled ? COLOR_ON : COLOR_OFF,
+      fillStyle: 'solid',
+      seed: this.seed,
+    }))
+
+
+    return g
   }
 }
 
@@ -243,7 +277,7 @@ class Output extends BaseElement<{ change: (value: boolean) => void }> {
     super()
     this.position = p
     this.logic = new logic.Output()
-    this.logic.on('change', v => this.emit('change', v))
+    this.logic.on('change', () => this.emit('redraw'))
   }
 
   get enabled() {
@@ -253,28 +287,53 @@ class Output extends BaseElement<{ change: (value: boolean) => void }> {
   set(enabled: boolean) {
     this.logic.set(enabled)
   }
+
+  draw(c: Context) {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+
+    g.appendChild(c.rc.circle(this.position.x, this.position.y, 10, {
+      strokeWidth: 0,
+      fill: this.enabled ? COLOR_ON : COLOR_OFF,
+      fillStyle: 'solid',
+      seed: this.seed,
+    }))
+
+    return g
+  }
 }
 
-export class Battery extends Output implements CircuitComponent, Shape {
+export class Battery extends BaseElement implements Bounded {
+  position: Point
+  shape: Box
   size = 55
-  options: { canToggle?: boolean, label?: string }
+  options: { canToggle?: boolean, label?: string, edge?: EdgeName }
+  output: Output
 
   constructor(
     x: number,
     y: number,
     options: Battery['options'] = {}
   ) {
-    super(point(x, y))
+    super()
+    this.position = point(x, y)
+    this.shape = box(
+      x - this.size / 2,
+      y - this.size / 2,
+      x + this.size / 2,
+      y + this.size / 2,
+    )
+    this.output = new Output(pointAtEdgeOf(this.shape, options.edge ?? 'right'))
+    this.children = [this.output]
     this.options = {
       canToggle: true,
       ...options,
     }
     if (!this.options.canToggle)
-      this.set(true)
+      this.output.set(true)
   }
 
   toggle = () => {
-    this.set(!this.enabled)
+    this.output.set(!this.output.enabled)
     this.emit('redraw')
   }
 
@@ -289,7 +348,7 @@ export class Battery extends Output implements CircuitComponent, Shape {
       g.addEventListener('click', this.toggle)
     }
 
-    const color = this.enabled ? COLOR_ON : COLOR_OFF
+    const color = this.output.enabled ? COLOR_ON : COLOR_OFF
 
     const e = c.rc.rectangle(
       0,
@@ -304,11 +363,11 @@ export class Battery extends Output implements CircuitComponent, Shape {
       c.createText(
         size / 2,
         size / 2 + textHeight / 4,
-        !this.options.canToggle ?
-          'Power' :
         this.options.label ?
           this.options.label :
-        this.enabled ?
+        !this.options.canToggle ?
+          'Power' :
+        this.output.enabled ?
           'ON' : 'OFF',
         { textAnchor: 'middle', fill: color }
       )
@@ -318,9 +377,9 @@ export class Battery extends Output implements CircuitComponent, Shape {
   }
 }
 
-export class Transistor extends BaseElement
-    implements CircuitComponent, Shape {
+export class Transistor extends BaseElement implements Bounded {
   position: Point
+  shape: Box
   size: number = 60
   seed = newSeed()
 
@@ -339,14 +398,24 @@ export class Transistor extends BaseElement
   ) {
     super()
     this.position = point(x, y)
-    this.input = new Input(this.position)
-    this.output = new Output(this.position)
-    this.control = new Input(this.position)
+    this.shape = box(
+      x - this.size / 2,
+      y - this.size / 2,
+      x + this.size / 2,
+      y + this.size / 2,
+    )
+
+    this.input = new Input(pointAtEdgeOf(this.shape, 'left'))
+    this.output = new Output(pointAtEdgeOf(this.shape, 'right'))
+    this.control = new Input(pointAtEdgeOf(this.shape, 'bottom'))
+
     this.logic = new logic.Transistor(
       this.input.logic,
       this.output.logic,
       this.control.logic,
     )
+
+    this.children = [this.input, this.control, this.output]
   }
 
   draw(c: Context) {
@@ -372,11 +441,10 @@ export class Transistor extends BaseElement
   }
 }
 
-export class Light extends EventEmitter<CircuitEvents>
-    implements CircuitComponent, Shape {
+export class Light extends BaseElement implements Bounded {
   position: Point
+  shape: Box
   size: number = 60
-  seed = newSeed()
 
   input: Input
 
@@ -386,7 +454,13 @@ export class Light extends EventEmitter<CircuitEvents>
   ) {
     super()
     this.position = point(x, y)
-    this.input = new Input(this.position)
+    this.shape = box(
+      x - this.size / 2,
+      y - this.size / 2,
+      x + this.size / 2,
+      y + this.size / 2,
+    )
+    this.input = new Input(pointAtEdgeOf(this.shape, 'left'))
     this.input.on('change', () => this.emit('redraw'))
   }
 
@@ -418,4 +492,20 @@ export class Light extends EventEmitter<CircuitEvents>
 
 function newSeed() {
   return Math.round(Math.random() * 100_000)
+}
+
+function pointAtEdgeOf(b: Box, edge: EdgeName) {
+  const c = b.center
+  switch (edge) {
+    case 'top':    return intersectSegment2Box(segment(c, c.translate(0, -1000)), b)[0]
+    case 'bottom': return intersectSegment2Box(segment(c, c.translate(0, +1000)), b)[0]
+    case 'left':   return intersectSegment2Box(segment(c, c.translate(-1000, 0)), b)[0]
+    case 'right':  return intersectSegment2Box(segment(c, c.translate(+1000, 0)), b)[0]
+
+    case 'bottom-left':  return b.toPoints()[0]
+    case 'bottom-right': return b.toPoints()[1]
+
+    case 'top-left':  return b.toPoints()[2]
+    case 'top-right': return b.toPoints()[3]
+  }
 }
