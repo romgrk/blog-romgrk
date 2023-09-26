@@ -1,8 +1,25 @@
 import EventEmitter from 'eventemitter3'
+import { clamp } from 'rambda'
 
-export class Input extends EventEmitter<{
+let links = [] as Link[]
+
+export function getLinks() {
+  return links
+}
+
+export function setLinks(l: Link[]) {
+  links = l
+}
+
+type ChangeEvent = {
   change: (value: boolean) => void,
-}> {
+}
+
+type UpdateEvent = {
+  update: () => void,
+}
+
+export class Input extends EventEmitter<ChangeEvent> {
   enabled: boolean
 
   constructor() {
@@ -11,14 +28,13 @@ export class Input extends EventEmitter<{
   }
 
   set(enabled: boolean) {
+    if (enabled === this.enabled) return
     this.enabled = enabled
     this.emit('change', this.enabled)
   }
 }
 
-export class Output extends EventEmitter<{
-  change: (value: boolean) => void,
-}> {
+export class Output extends EventEmitter<ChangeEvent> {
   enabled: boolean
 
   constructor() {
@@ -27,13 +43,14 @@ export class Output extends EventEmitter<{
   }
 
   set(enabled: boolean) {
+    if (enabled === this.enabled) return
     this.enabled = enabled
     this.emit('change', this.enabled)
   }
 }
 
 
-export class Link extends EventEmitter {
+export class Link extends EventEmitter<UpdateEvent> {
   output: Output
   input: Input
   length: number
@@ -49,17 +66,35 @@ export class Link extends EventEmitter {
     this.length = 100
     this.streams = []
 
-    output.on('change', value => {
-      input.set(value)
-      this.emit('change')
+    output.on('change', () => {
     })
-    input.set(output.enabled)
+
+    links.push(this)
   }
 
   update(dt: number) {
-    this.streams.forEach(stream => {
-      stream
+    this.streams.forEach((stream, i) => {
+      stream[0] = clamp(0, this.length, stream[0] + dt)
+      stream[1] = clamp(0, this.length, stream[1] + dt)
     })
+
+    if (this.output.enabled) {
+      if (this.streams.length > 0 && this.streams[0][0] <= dt) {
+        this.streams[0][0] = 0
+      } else {
+        this.streams.push([0, dt])
+      }
+    }
+
+    this.streams = this.streams.filter(s => s[0] !== s[1])
+
+    if (this.streams.length > 0 && this.streams[this.streams.length - 1][1] === this.length) {
+      this.input.set(true)
+    } else {
+      this.input.set(false)
+    }
+
+    this.emit('update')
   }
 }
 
@@ -69,12 +104,12 @@ export class Transistor extends EventEmitter {
   output: Output
   control: Input
 
-  constructor() {
+  constructor(input?: Input, output?: Output, control?: Input) {
     super()
 
-    this.input = new Input()
-    this.output = new Output()
-    this.control = new Input()
+    this.input = input ?? new Input()
+    this.output = output ?? new Output()
+    this.control = control ?? new Input()
 
     const update = () => {
       this.output.set(this.input.enabled && this.control.enabled)

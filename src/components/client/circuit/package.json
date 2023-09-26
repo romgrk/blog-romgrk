@@ -11,6 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "eventemitter3": "^5.0.1",
+    "rambda": "^8.4.0",
+    "romgrk-2d-geometry": "^0.1.0",
     "roughjs": "^4.6.3"
   }
 }

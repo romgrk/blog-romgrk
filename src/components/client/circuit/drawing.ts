@@ -1,5 +1,7 @@
 import rough from 'roughjs'
 import EventEmitter from 'eventemitter3'
+import { point, segment, vector, Point, Segment } from 'romgrk-2d-geometry'
+import * as logic from './logic'
 import './circuit.css'
 
 type RC = ReturnType<typeof rough.svg>
@@ -7,7 +9,6 @@ type Options = Parameters<RC['line']>[4]
 
 const tau = Math.PI * 2
 
-const padding = 40
 const textHeight = 18
 
 const COLOR_ON  = 'yellow'
@@ -33,7 +34,7 @@ export class Context {
     return element
   }
 
-  createArrow(vectors: Vector[], options?: Options) {
+  createArrow(vectors: Segment[], options?: Options) {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
 
     vectors.forEach(v => {
@@ -75,13 +76,12 @@ type CircuitEvents = {
 }
 
 interface Shape {
-  x: number
-  y: number
-  size: number
+  // x: number
+  // y: number
+  // size: number
 }
 
 interface CircuitComponent {
-  size: number
   seed: number
   draw(c: Context): SVGElement
   on(e: 'redraw', f: Function): void
@@ -89,46 +89,81 @@ interface CircuitComponent {
 
 export class Circuit {
   elements: CircuitComponent[]
-  cache: SVGElement[]
+  cache: Map<any, SVGElement>
+  requests: Set<any>
   context: Context
+  links: logic.Link[]
+  updateInterval: number
+  redrawInterval: number
 
   constructor(c: Context) {
     this.elements = []
-    this.cache = []
     this.context = c
+    this.links = []
+    this.updateInterval = 0
+    this.redrawInterval = 0
+    this.cache = new Map()
+    this.requests = new Set()
   }
 
-  add(d: CircuitComponent) {
-    this.elements.push(d)
-    d.on('redraw', this.redraw)
+  setup(fn: Function) {
+    logic.setLinks(this.links)
+    fn()
+  }
+
+  start() {
+    this.stop()
+    this.updateInterval = setInterval(() => {
+      this.links.forEach(link => {
+        link.update(1)
+      })
+    }, 60) as unknown as number
+
+    this.updateInterval = setInterval(() => {
+      this.requests.forEach(this.drawElement)
+      this.requests = new Set()
+    }, 100) as unknown as number
+  }
+
+  stop() {
+    clearInterval(this.updateInterval)
+  }
+
+  add(e: CircuitComponent) {
+    this.elements.push(e)
+    // FIXME: clear resources
+    e.on('redraw', this.scheduleElement.bind(null, e))
   }
 
   link(output: Output, input: Input) {
     this.add(new Link(input, output))
   }
 
-  redraw = () => {
-    this.draw()
+  scheduleElement = (e: CircuitComponent) => {
+    this.requests.add(e)
   }
 
-  draw() {
-    this.cache.forEach(e => {
-      e.remove()
-    })
-    this.cache = []
-    this.elements.forEach(e => {
-      const child = e.draw(this.context)
-      this.context.svg.appendChild(child)
-      this.cache.push(child)
-    })
+  drawElement = (e: CircuitComponent) => {
+    this.cache.get(e)?.remove()
+    const child = e.draw(this.context)
+    this.context.svg.appendChild(child)
+    this.cache.set(e, child)
+  }
+
+  draw = () => {
+    this.elements.forEach(this.drawElement)
   }
 }
 
-class Link extends EventEmitter<CircuitEvents> implements CircuitComponent {
+class BaseElement<T = {}> extends EventEmitter<CircuitEvents & T> {
+  seed = newSeed()
+}
+
+class Link extends BaseElement implements CircuitComponent {
   size: number = -1
   input: Input
   output: Output
-  seed = newSeed()
+  logic: logic.Link
 
   constructor(
     input: Input,
@@ -137,125 +172,86 @@ class Link extends EventEmitter<CircuitEvents> implements CircuitComponent {
     super()
     this.input = input
     this.output = output
-
-    output.on('change', value => {
-      input.set(value)
-      this.emit('redraw')
-    })
-    input.set(output.enabled)
+    this.logic = new logic.Link(output.logic, input.logic)
+    this.logic.on('update', () => this.emit('redraw'))
   }
 
   draw(c: Context) {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
 
-    const start = pointAtEdge(this.output.s, this.input.s)
-    const end = pointAtEdge(this.input.s, this.output.s)
+    const start = this.output.position
+    const end = this.input.position
 
-    const vectors = toLinearVectors(start, end)
-    const color = this.output.enabled ? COLOR_ON : COLOR_OFF
+    const line = segment(start, end)
+    const v = vector(start, end)
 
-    g.appendChild(c.createArrow(vectors, { stroke: color, seed: this.seed }))
+    g.appendChild(c.createArrow([line], { stroke: COLOR_OFF, seed: this.seed }))
+
+    this.logic.streams.forEach(stream => {
+      const fStart = stream[0] / this.logic.length
+      const fEnd   = stream[1] / this.logic.length
+
+      const vStart = v.multiply(fStart)
+      const vEnd = v.multiply(fEnd)
+
+      const pStart = start.translate(vStart)
+      const pEnd = start.translate(vEnd)
+
+      g.appendChild(c.rc.line(
+        pStart.x,
+        pStart.y,
+        pEnd.x,
+        pEnd.y,
+        { stroke: COLOR_ON, seed: this.seed },
+      ))
+    })
 
     return g
   }
 }
 
-function pointAtEdge(a: Shape, b: Shape) {
-  const dx = b.x - a.x
-  const dy = b.y - a.y
-  const angle = (Math.atan2(dy, dx) + tau) % tau
-  if (angle > tau * 1 / 8 && angle <= tau * 3 / 8)
-    return { x: a.x, y: a.y + a.size / 2 }
-  if (angle > tau * 3 / 8 && angle <= tau * 5 / 8)
-    return { x: a.x - a.size / 2, y: a.y }
-  if (angle > tau * 5 / 8 && angle <= tau * 7 / 8)
-    return { x: a.x, y: a.y - a.size / 2 }
-  return { x: a.x + a.size / 2, y: a.y }
-}
+class Input extends BaseElement<{ change: (value: boolean) => void }> {
+  position: Point
+  logic: logic.Input
 
-type Point = { x: number, y: number }
-type Vector = { start: Point, end: Point }
-
-function vector(x1: number, y1: number, x2: number, y2: number) {
-  return {
-    start: { x: x1, y: y1 },
-    end:   { x: x2, y: y2 },
-  }
-}
-
-function toLinearVectors(start: Point, end: Point): Vector[] {
-  const dx = end.x - start.x
-  const dy = end.y - start.y
-
-  if (dx === 0 || dy === 0)
-    return [{ start, end }]
-
-  if (Math.abs(dx) > Math.abs(dy)) {
-    const a = start
-    const b = { x: start.x + dx / 2, y: start.y }
-    const c = { x: start.x + dx / 2, y: end.y }
-    const d = end
-    return [
-      { start: a, end: b },
-      { start: b, end: c },
-      { start: c, end: d },
-    ]
-  } else {
-    const a = start
-    const b = { x: start.x, y: start.y + dy / 2 }
-    const c = { x: end.x, y: start.y + dy / 2 }
-    const d = end
-    return [
-      { start: a, end: b },
-      { start: b, end: c },
-      { start: c, end: d },
-    ]
-  }
-}
-
-class Input extends EventEmitter<{
-  change: (value: boolean) => void,
-}> {
-  s: Shape
-  enabled: boolean
-
-  constructor(s: Shape) {
+  constructor(p: Point) {
     super()
-    this.s = s
-    this.enabled = false
+    this.position = p
+    this.logic = new logic.Input()
+    this.logic.on('change', v => this.emit('change', v))
+  }
+
+  get enabled() {
+    return this.logic.enabled
   }
 
   set(enabled: boolean) {
-    this.enabled = enabled
-    this.emit('change', this.enabled)
+    this.logic.set(enabled)
   }
 }
 
-class Output extends EventEmitter<{
-  change: (value: boolean) => void,
-}> {
-  s: Shape
-  enabled: boolean
+class Output extends BaseElement<{ change: (value: boolean) => void }> {
+  position: Point
+  logic: logic.Output
 
-  constructor(s: Shape) {
+  constructor(p: Point) {
     super()
-    this.s = s
-    this.enabled = false
+    this.position = p
+    this.logic = new logic.Output()
+    this.logic.on('change', v => this.emit('change', v))
+  }
+
+  get enabled() {
+    return this.logic.enabled
   }
 
   set(enabled: boolean) {
-    this.enabled = enabled
-    this.emit('change', this.enabled)
+    this.logic.set(enabled)
   }
 }
 
-export class Battery extends EventEmitter<CircuitEvents>
-    implements CircuitComponent, Shape {
-  x: number
-  y: number
-  size: number = 55
-  seed = newSeed()
-  output: Output
+export class Battery extends Output implements CircuitComponent, Shape {
+  size = 55
   options: { canToggle?: boolean, label?: string }
 
   constructor(
@@ -263,34 +259,32 @@ export class Battery extends EventEmitter<CircuitEvents>
     y: number,
     options: Battery['options'] = {}
   ) {
-    super()
-    this.x = x
-    this.y = y
-    this.output = new Output(this)
+    super(point(x, y))
     this.options = {
       canToggle: true,
       ...options,
     }
     if (!this.options.canToggle)
-      this.output.set(true)
+      this.set(true)
   }
 
   toggle = () => {
-    this.output.set(!this.output.enabled)
+    this.set(!this.enabled)
+    this.emit('redraw')
   }
 
   draw(c: Context) {
-    const { x, y, size } = this
+    const { position, size } = this
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-    g.setAttribute('transform', `translate(${x - size / 2}, ${y - size / 2})`)
+    g.setAttribute('transform', `translate(${position.x - size / 2}, ${position.y - size / 2})`)
 
     if (this.options.canToggle) {
       g.setAttribute('style', 'cursor: pointer')
       g.addEventListener('click', this.toggle)
     }
 
-    const color = this.output.enabled ? COLOR_ON : COLOR_OFF
+    const color = this.enabled ? COLOR_ON : COLOR_OFF
 
     const e = c.rc.rectangle(
       0,
@@ -309,7 +303,7 @@ export class Battery extends EventEmitter<CircuitEvents>
           'Power' :
         this.options.label ?
           this.options.label :
-        this.output.enabled ?
+        this.enabled ?
           'ON' : 'OFF',
         { textAnchor: 'middle', fill: color }
       )
@@ -319,41 +313,42 @@ export class Battery extends EventEmitter<CircuitEvents>
   }
 }
 
-export class Transistor extends EventEmitter<CircuitEvents>
+export class Transistor extends BaseElement
     implements CircuitComponent, Shape {
-  x: number
-  y: number
+  position: Point
   size: number = 60
   seed = newSeed()
 
   input: Input
   output: Output
   control: Input
+  logic: {
+    input: logic.Input
+    output: logic.Output
+    control: logic.Input
+  }
 
   constructor(
     x: number,
     y: number,
   ) {
     super()
-    this.x = x
-    this.y = y
-    this.input = new Input(this)
-    this.output = new Output(this)
-    this.control = new Input(this)
-
-    const update = () => {
-      this.output.set(this.input.enabled && this.control.enabled)
-    }
-
-    this.input.on('change', update)
-    this.control.on('change', update)
+    this.position = point(x, y)
+    this.input = new Input(this.position)
+    this.output = new Output(this.position)
+    this.control = new Input(this.position)
+    this.logic = new logic.Transistor(
+      this.input.logic,
+      this.output.logic,
+      this.control.logic,
+    )
   }
 
   draw(c: Context) {
-    const { x, y, size } = this
+    const { position, size } = this
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-    g.setAttribute('transform', `translate(${x - size / 2}, ${y - size / 2})`)
+    g.setAttribute('transform', `translate(${position.x - size / 2}, ${position.y - size / 2})`)
 
     g.appendChild(c.rc.rectangle(
       0,
@@ -374,8 +369,7 @@ export class Transistor extends EventEmitter<CircuitEvents>
 
 export class Light extends EventEmitter<CircuitEvents>
     implements CircuitComponent, Shape {
-  x: number
-  y: number
+  position: Point
   size: number = 60
   seed = newSeed()
 
@@ -386,16 +380,16 @@ export class Light extends EventEmitter<CircuitEvents>
     y: number,
   ) {
     super()
-    this.x = x
-    this.y = y
-    this.input = new Input(this)
+    this.position = point(x, y)
+    this.input = new Input(this.position)
+    this.input.on('change', () => this.emit('redraw'))
   }
 
   draw(c: Context) {
-    const { x, y, size } = this
+    const { position, size } = this
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-    g.setAttribute('transform', `translate(${x - size / 2}, ${y - size / 2})`)
+    g.setAttribute('transform', `translate(${position.x - size / 2}, ${position.y - size / 2})`)
 
     g.appendChild(c.rc.rectangle(
       0,
