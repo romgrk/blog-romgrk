@@ -43,6 +43,7 @@ export function DemoTransistor() {
     circuit.start()
 
     return () => {
+      circuit.stop()
       svg.innerHTML = ''
     }
   }, [])

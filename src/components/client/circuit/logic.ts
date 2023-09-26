@@ -82,11 +82,11 @@ export class Link extends EventEmitter<UpdateEvent> {
       if (this.streams.length > 0 && this.streams[0][0] <= dt) {
         this.streams[0][0] = 0
       } else {
-        this.streams.push([0, dt])
+        this.streams.unshift([0, dt])
       }
     }
 
-    this.streams = this.streams.filter(s => s[0] !== s[1])
+    this.streams = this.streams.filter(s => s[1] - s[0] > 0)
 
     if (this.streams.length > 0 && this.streams[this.streams.length - 1][1] === this.length) {
       this.input.set(true)

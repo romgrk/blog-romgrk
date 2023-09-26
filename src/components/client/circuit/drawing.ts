@@ -94,14 +94,14 @@ export class Circuit {
   context: Context
   links: logic.Link[]
   updateInterval: number
-  redrawInterval: number
+  redrawFrame: number
 
   constructor(c: Context) {
     this.elements = []
     this.context = c
     this.links = []
     this.updateInterval = 0
-    this.redrawInterval = 0
+    this.redrawFrame = 0
     this.cache = new Map()
     this.requests = new Set()
   }
@@ -117,26 +117,31 @@ export class Circuit {
       this.links.forEach(link => {
         link.update(1)
       })
-    }, 60) as unknown as number
+    }, 30) as unknown as number
 
-    this.updateInterval = setInterval(() => {
+    const redraw = () => {
       this.requests.forEach(this.drawElement)
       this.requests = new Set()
-    }, 100) as unknown as number
+      requestAnimationFrame(redraw)
+    }
+
+    this.redrawFrame = requestAnimationFrame(redraw)
   }
 
   stop() {
     clearInterval(this.updateInterval)
+    cancelAnimationFrame(this.redrawFrame)
   }
 
   add(e: CircuitComponent) {
     this.elements.push(e)
     // FIXME: clear resources
     e.on('redraw', this.scheduleElement.bind(null, e))
+    return e
   }
 
   link(output: Output, input: Input) {
-    this.add(new Link(input, output))
+    return this.add(new Link(input, output))
   }
 
   scheduleElement = (e: CircuitComponent) => {

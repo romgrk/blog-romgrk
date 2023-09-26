@@ -8,6 +8,9 @@ dependencies:
   eventemitter3:
     specifier: ^5.0.1
     version: 5.0.1
+  pixi.js:
+    specifier: 8.0.0-beta.1
+    version: 8.0.0-beta.1
   rambda:
     specifier: ^8.4.0
     version: 8.4.0
@@ -20,6 +23,26 @@ dependencies:
 
 packages:
 
+  /@pixi/colord@2.9.6:
+    resolution: {integrity: sha512-nezytU2pw587fQstUu1AsJZDVEynjskwOL+kibwcdxsMBFqPsFFNA7xl0ii/gXuDi6M0xj3mfRJj8pBSc2jCfA==}
+    dev: false
+
+  /@types/css-font-loading-module@0.0.8:
+    resolution: {integrity: sha512-PdJeLlCJj/ShOA+c0dXdZ/e1P0Cdjhip+dRBtPaigOqwKd0DiFx3NeO6T2E7AQ5JszSR3dub3YkQjc2hcQyxSw==}
+    dev: false
+
+  /@types/earcut@2.1.2:
+    resolution: {integrity: sha512-EU6fwVNP1TGVTkCILfURtzzwJq/ie5LgipELnzCINgm4VdDIkkbB8wnLSe81J77Bbqf4MiO3sJGhWzc6MCp5dQ==}
+    dev: false
+
+  /@webgpu/types@0.1.34:
+    resolution: {integrity: sha512-9mXtH+CC8q+Ku7Z+1XazNIte81FvfdXwR2lLRO7Ykzjd/hh1J1krJa0gtnkF1kvP11psUmKEPKo7iMTeEcUpNA==}
+    dev: false
+
+  /earcut@2.2.4:
+    resolution: {integrity: sha512-/pjZsA1b4RPHbeWZQn66SWS8nZZWLQQ23oE3Eam7aroEFGEvwKAsJfZ9ytiEMycfzXWpca4FA9QIOehf7PocBQ==}
+    dev: false
+
   /eventemitter3@5.0.1:
     resolution: {integrity: sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==}
     dev: false
@@ -28,8 +51,25 @@ packages:
     resolution: {integrity: sha512-adAAzV4vgE5BBkeimtSPMkTARn6XFoV8vhel4C4S/B+cC7XNZGXyU3Fb2zNBz0PgYHkLLWWSL0CRSSnC+Xcw5g==}
     dev: false
 
+  /ismobilejs@1.1.1:
+    resolution: {integrity: sha512-VaFW53yt8QO61k2WJui0dHf4SlL8lxBofUuUmwBo0ljPk0Drz2TiuDW4jo3wDcv41qy/SxrJ+VAzJ/qYqsmzRw==}
+    dev: false
+
   /path-data-parser@0.1.0:
     resolution: {integrity: sha512-NOnmBpt5Y2RWbuv0LMzsayp3lVylAHLPUTut412ZA3l+C4uw4ZVkQbjShYCQ8TCpUMdPapr4YjUqLYD6v68j+w==}
+    dev: false
+
+  /pixi.js@8.0.0-beta.1:
+    resolution: {integrity: sha512-BCiHyF6+zWGOoBDotm6gtaVMTDGXM9blpIiO9WBanfcunHNioxgONFuLv2zrrp9I9n/agAifuTUOw/EHctuxRA==}
+    engines: {node: '>=18', npm: '>=8', yarn: please-use-npm}
+    dependencies:
+      '@pixi/colord': 2.9.6
+      '@types/css-font-loading-module': 0.0.8
+      '@types/earcut': 2.1.2
+      '@webgpu/types': 0.1.34
+      earcut: 2.2.4
+      eventemitter3: 5.0.1
+      ismobilejs: 1.1.1
     dev: false
 
   /points-on-curve@0.2.0:
