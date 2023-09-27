@@ -29,7 +29,7 @@ type EdgeName =
 
 const tau = Math.PI * 2
 
-const textHeight = 18
+const TEXT_HEIGHT = 18
 
 const COLOR_ON  = 'yellow'
 const COLOR_OFF = '#aaa'
@@ -165,6 +165,22 @@ export class Circuit {
     return this.add(new Link(input, output))
   }
 
+  label(b: Bounded, edge: EdgeName, text: string) {
+    const vector = vectorForEdge(b, edge)
+    const point = pointForEdge(b, edge).translate(vector.multiply(5))
+
+    if (edge.includes('top'))
+      point.y -= TEXT_HEIGHT
+    if (edge.includes('bottom'))
+      point.y += TEXT_HEIGHT + 10
+
+    const textAnchor =
+      edge.includes('left') ? 'end' :
+      edge.includes('right') ? 'start' : 'middle'
+
+    return this.add(new Label(point, text, { textAnchor }))
+  }
+
   scheduleElement = (e: BaseElement<any>) => {
     this.requests.add(e)
   }
@@ -247,13 +263,21 @@ class Link extends BaseElement {
   }
 }
 
-class Input extends BaseElement {
+class Input extends BaseElement implements Bounded {
   position: Point
+  shape: Box
+  size = 10
   logic: logic.Input
 
   constructor(p: Point) {
     super()
     this.position = p
+    this.shape = box(
+      p.x - this.size / 2,
+      p.y - this.size / 2,
+      p.x + this.size / 2,
+      p.y + this.size / 2,
+    )
     this.logic = new logic.Input()
     this.logic.on('change', () => this.emit('redraw'))
   }
@@ -269,7 +293,7 @@ class Input extends BaseElement {
   draw(c: Context) {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
 
-    g.appendChild(c.rc.circle(this.position.x, this.position.y, 10, {
+    g.appendChild(c.rc.circle(this.position.x, this.position.y, this.size, {
       strokeWidth: 0,
       fill: this.enabled ? COLOR_ON : COLOR_OFF,
       fillStyle: 'solid',
@@ -281,13 +305,21 @@ class Input extends BaseElement {
   }
 }
 
-class Output extends BaseElement<{ change: (value: boolean) => void }> {
+class Output extends BaseElement implements Bounded {
   position: Point
+  shape: Box
+  size = 10
   logic: logic.Output
 
   constructor(p: Point) {
     super()
     this.position = p
+    this.shape = box(
+      p.x - this.size / 2,
+      p.y - this.size / 2,
+      p.x + this.size / 2,
+      p.y + this.size / 2,
+    )
     this.logic = new logic.Output()
     this.logic.on('change', () => this.emit('redraw'))
   }
@@ -303,7 +335,7 @@ class Output extends BaseElement<{ change: (value: boolean) => void }> {
   draw(c: Context) {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
 
-    g.appendChild(c.rc.circle(this.position.x, this.position.y, 10, {
+    g.appendChild(c.rc.circle(this.position.x, this.position.y, this.size, {
       strokeWidth: 0,
       fill: this.enabled ? COLOR_ON : COLOR_OFF,
       fillStyle: 'solid',
@@ -375,7 +407,7 @@ export class Battery extends BaseElement implements Bounded {
     g.appendChild(
       c.createText(
         size / 2,
-        size / 2 + textHeight / 4,
+        size / 2 + TEXT_HEIGHT / 4,
         this.options.label ?
           this.options.label :
         !this.options.canToggle ?
@@ -444,10 +476,6 @@ export class Transistor extends BaseElement implements Bounded {
       size,
       { stroke: '#aaa', fill: 'rgba(255, 0, 0, 0.3)', fillStyle: 'solid', seed: this.seed }
     ))
-
-    g.appendChild(c.createText(size / 2 + 10, size + textHeight, 'Gate'))
-    g.appendChild(c.createText(0 - 10, size / 2 - textHeight, 'Input', { textAnchor: 'end' }))
-    g.appendChild(c.createText(size + 10, size / 2 - textHeight, 'Output'))
 
     return g
   }
@@ -535,11 +563,15 @@ export function pointForBoxEdge(b: Box, edge: EdgeName) {
     case 'bottom-left':  return b.toPoints()[0]
     case 'bottom-right': return b.toPoints()[1]
 
-    case 'top-left':  return b.toPoints()[2]
-    case 'top-right': return b.toPoints()[3]
+    case 'top-right': return b.toPoints()[2]
+    case 'top-left':  return b.toPoints()[3]
   }
 }
 
 export function pointForEdge(b: Bounded, edge: EdgeName) {
   return pointForBoxEdge(b.shape, edge)
+}
+
+export function vectorForEdge(b: Bounded, edge: EdgeName) {
+  return vector(b.shape.center, pointForBoxEdge(b.shape, edge)).normalize()
 }
