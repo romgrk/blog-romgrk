@@ -35,21 +35,28 @@ const COLOR_ON  = 'yellow'
 const COLOR_OFF = '#aaa'
 const COLOR_LINK_OFF = '#555'
 
+type TextOptions = {
+  fill?: string,
+  fontSize?: number,
+  textAnchor?: 'start' | 'middle' | 'end',
+}
+
 export class Context {
   rc: RC
   svg: SVGSVGElement
 
   constructor(svg: SVGSVGElement) {
     this.svg = svg
+    this.svg.classList.add('circuit')
     this.rc = rough.svg(svg)
   }
 
-  createText(x: number, y: number, text: string, options: any = {}) {
+  createText(x: number, y: number, text: string, options: TextOptions = {}) {
     const element = document.createElementNS('http://www.w3.org/2000/svg', 'text')
-    element.setAttribute('style', 'font-size: 16px')
     element.setAttribute('x', String(x))
     element.setAttribute('y', String(y))
     element.setAttribute('fill', options.fill ?? '#ccc')
+    element.setAttribute('font-size', `${options.fontSize ?? 16}px`)
     element.setAttribute('text-anchor', options.textAnchor ?? 'start')
     element.textContent = text
     return element
@@ -97,10 +104,7 @@ type CircuitEvents = {
 }
 
 interface Bounded {
-  shape: Shape<Box>
-  // x: number
-  // y: number
-  // size: number
+  shape: Box
 }
 
 export class Circuit {
@@ -133,7 +137,7 @@ export class Circuit {
       this.links.forEach(link => {
         link.update(1)
       })
-    }, 30) as unknown as number
+    }, 20) as unknown as number
 
     const redraw = () => {
       this.requests.forEach(this.drawElement)
@@ -203,6 +207,7 @@ class Link extends BaseElement {
 
   draw(c: Context) {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    g.classList.add('circuit-link')
 
     const start = this.output.position
     const end = this.input.position
@@ -210,7 +215,14 @@ class Link extends BaseElement {
     const line = segment(start, end)
     const v = vector(start, end)
 
-    g.appendChild(c.createArrow([line], { stroke: COLOR_LINK_OFF, seed: this.seed }))
+    // g.appendChild(c.createArrow([line], { stroke: COLOR_LINK_OFF, seed: this.seed }))
+    g.appendChild(c.rc.line(
+      line.start.x,
+      line.start.y,
+      line.end.x,
+      line.end.y,
+      { stroke: COLOR_LINK_OFF, seed: this.seed }
+    ))
 
     this.logic.streams.forEach(stream => {
       const fStart = stream[0] / this.logic.length
@@ -235,7 +247,7 @@ class Link extends BaseElement {
   }
 }
 
-class Input extends BaseElement<{ change: (value: boolean) => void }> {
+class Input extends BaseElement {
   position: Point
   logic: logic.Input
 
@@ -322,7 +334,7 @@ export class Battery extends BaseElement implements Bounded {
       x + this.size / 2,
       y + this.size / 2,
     )
-    this.output = new Output(pointAtEdgeOf(this.shape, options.edge ?? 'right'))
+    this.output = new Output(pointForEdge(this, options.edge ?? 'right'))
     this.children = [this.output]
     this.options = {
       canToggle: true,
@@ -345,7 +357,8 @@ export class Battery extends BaseElement implements Bounded {
 
     if (this.options.canToggle) {
       g.setAttribute('style', 'cursor: pointer')
-      g.addEventListener('click', this.toggle)
+      g.addEventListener('mousedown', this.toggle)
+      g.addEventListener('touchstart', this.toggle)
     }
 
     const color = this.output.enabled ? COLOR_ON : COLOR_OFF
@@ -405,9 +418,9 @@ export class Transistor extends BaseElement implements Bounded {
       y + this.size / 2,
     )
 
-    this.input = new Input(pointAtEdgeOf(this.shape, 'left'))
-    this.output = new Output(pointAtEdgeOf(this.shape, 'right'))
-    this.control = new Input(pointAtEdgeOf(this.shape, 'bottom'))
+    this.input = new Input(pointForEdge(this, 'left'))
+    this.output = new Output(pointForEdge(this, 'right'))
+    this.control = new Input(pointForEdge(this, 'bottom'))
 
     this.logic = new logic.Transistor(
       this.input.logic,
@@ -431,10 +444,9 @@ export class Transistor extends BaseElement implements Bounded {
       size,
       { stroke: '#aaa', fill: 'rgba(255, 0, 0, 0.3)', fillStyle: 'solid', seed: this.seed }
     ))
+
     g.appendChild(c.createText(size / 2 + 10, size + textHeight, 'Gate'))
-
     g.appendChild(c.createText(0 - 10, size / 2 - textHeight, 'Input', { textAnchor: 'end' }))
-
     g.appendChild(c.createText(size + 10, size / 2 - textHeight, 'Output'))
 
     return g
@@ -460,8 +472,9 @@ export class Light extends BaseElement implements Bounded {
       x + this.size / 2,
       y + this.size / 2,
     )
-    this.input = new Input(pointAtEdgeOf(this.shape, 'left'))
-    this.input.on('change', () => this.emit('redraw'))
+    this.input = new Input(pointForEdge(this, 'left'))
+    this.input.on('redraw', () => this.emit('redraw'))
+    this.children = [this.input]
   }
 
   draw(c: Context) {
@@ -490,11 +503,28 @@ export class Light extends BaseElement implements Bounded {
   }
 }
 
+export class Label extends BaseElement {
+  position: Point
+  text: string
+  options: TextOptions
+
+  constructor(position: Point, text: string, options: Label['options'] = {}) {
+    super()
+    this.position = position
+    this.text = text
+    this.options = options
+  }
+
+  draw(c: Context) {
+    return c.createText(this.position.x, this.position.y, this.text, this.options)
+  }
+}
+
 function newSeed() {
   return Math.round(Math.random() * 100_000)
 }
 
-function pointAtEdgeOf(b: Box, edge: EdgeName) {
+export function pointForBoxEdge(b: Box, edge: EdgeName) {
   const c = b.center
   switch (edge) {
     case 'top':    return intersectSegment2Box(segment(c, c.translate(0, -1000)), b)[0]
@@ -508,4 +538,8 @@ function pointAtEdgeOf(b: Box, edge: EdgeName) {
     case 'top-left':  return b.toPoints()[2]
     case 'top-right': return b.toPoints()[3]
   }
+}
+
+export function pointForEdge(b: Bounded, edge: EdgeName) {
+  return pointForBoxEdge(b.shape, edge)
 }

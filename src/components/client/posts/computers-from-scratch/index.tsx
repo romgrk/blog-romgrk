@@ -3,8 +3,10 @@ import {
   Battery,
   Context,
   Circuit,
+  Label,
   Light,
   Transistor,
+  pointForEdge,
 } from '../../circuit/drawing'
 import cx from './index.module.css'
 
@@ -25,6 +27,7 @@ export function DemoTransistor() {
     circuit.setup(() => {
       const t = new Transistor(x, y)
       circuit.add(t)
+      circuit.add(new Label(pointForEdge(t, 'left'), 'Input', { textAnchor: 'end' }))
 
       const power = new Battery(x - 200, y, { canToggle: false, label: '+5v' })
       circuit.add(power)

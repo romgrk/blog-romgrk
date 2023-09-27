@@ -1,4 +1,15 @@
 
+.circuit text {
+  user-select: none;
+}
+
+.circuit * {
+  z-index: 1;
+}
+.circuit .circuit-link {
+  z-index: 0;
+}
+
 .circuit-battery {
   cursor: pointer;
 }

@@ -49,7 +49,6 @@ export class Output extends EventEmitter<ChangeEvent> {
   }
 }
 
-
 export class Link extends EventEmitter<UpdateEvent> {
   output: Output
   input: Input
@@ -73,6 +72,9 @@ export class Link extends EventEmitter<UpdateEvent> {
   }
 
   update(dt: number) {
+    const isBeforeEmpty = this.streams.length === 0
+    const isBeforeFull  = this.streams.length === 1 && this.streams[0][0] === 0 && this.streams[0][1] === this.length
+
     this.streams.forEach((stream, i) => {
       stream[0] = clamp(0, this.length, stream[0] + dt)
       stream[1] = clamp(0, this.length, stream[1] + dt)
@@ -92,6 +94,13 @@ export class Link extends EventEmitter<UpdateEvent> {
       this.input.set(true)
     } else {
       this.input.set(false)
+    }
+
+    const isAfterEmpty = this.streams.length === 0
+    const isAfterFull  = this.streams.length === 1 && this.streams[0][0] === 0 && this.streams[0][1] === this.length
+
+    if ((isBeforeFull && isAfterFull) || (isBeforeEmpty && isAfterEmpty)) {
+      return
     }
 
     this.emit('update')
@@ -119,10 +128,3 @@ export class Transistor extends EventEmitter {
     this.control.on('change', update)
   }
 }
-
-export class Chip extends EventEmitter {
-  name: string = ''
-  inputs: Input[] = []
-  outputs: Input[] = []
-}
-
