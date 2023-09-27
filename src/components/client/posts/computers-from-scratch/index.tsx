@@ -3,44 +3,74 @@ import {
   Battery,
   Context,
   Circuit,
+  Ground,
   Light,
-  Transistor,
+  Junction,
+  BigTransistor,
 } from '../../circuit/drawing'
 import cx from './index.module.css'
 
 export function DemoTransistor() {
+  return createCircuit({}, (ctx, c) => {
+    const x = ctx.dimensions.width  / 2 - BigTransistor.size / 2
+    const y = 100
+
+    const t = c.add(new BigTransistor(x, y))
+    c.label(t.input, 'top-left', 'Input')
+    c.label(t.control, 'bottom-right', 'Control')
+    c.label(t.output, 'top-right', 'Output')
+    c.label(t, 'top', 'THE TRANSISTOR. TADA!', { fontWeight: 'bold' })
+
+    const power = c.add(new Battery(x - 200, y, { canToggle: false, label: '+5v' }))
+
+    const control = c.add(new Battery(x, y + power.size * 2, { edge: 'top' }))
+
+    const led = c.add(new Light(x + 200, y))
+
+    c.link(power.output, t.input)
+    c.link(control.output, t.control)
+    c.link(t.output, led.input)
+  })
+}
+
+export function DemoGates() {
+  return createCircuit({}, (ctx, c) => {
+    const x = ctx.dimensions.width  / 2 - BigTransistor.size / 2
+    const y = 60
+
+    const junction = c.add(new Junction(x - BigTransistor.size, y))
+
+    const transistor = c.add(new BigTransistor(x, y + 1.5 * BigTransistor.size))
+
+    const power = c.add(new Battery(x - 200, y, { canToggle: false, label: '+5v' }))
+
+    const control = c.add(new Battery(x, y + BigTransistor.size + power.size * 2, { edge: 'top' }))
+
+    const ground = c.add(new Ground(x + 200, y + 1.5 * BigTransistor.size))
+    const led = c.add(new Light(x + 200, y))
+
+    c.link(power.output, junction.input)
+    c.link(junction.outputA, led.input).logic.resistance = 10
+    c.link(junction.outputB, transistor.input)
+    c.link(transistor.output, ground.input)
+    c.link(control.output, transistor.control)
+
+  })
+}
+
+
+type CircuitOptions = {
+  height?: number,
+}
+
+function createCircuit(options: CircuitOptions, fn: (ctx: Context, c: Circuit) => void) {
   const ref = useRef<SVGSVGElement>(null)
 
   useEffect(() => {
     const c = new Context(ref.current!)
-
-    const size = 60
-    const x = c.dimensions.width  / 2 - size / 2
-    const y = 100
-
     const circuit = new Circuit(c)
 
-    circuit.setup(() => {
-      const t = new Transistor(x, y)
-      circuit.add(t)
-      circuit.label(t.input, 'top-left', 'Input')
-      circuit.label(t.control, 'bottom-right', 'Control')
-      circuit.label(t.output, 'top-right', 'Output')
-      circuit.label(t, 'top', 'THE TRANSISTOR. TADA!', { fontWeight: 'bold' })
-
-      const power = new Battery(x - 200, y, { canToggle: false, label: '+5v' })
-      circuit.add(power)
-
-      const control = new Battery(x, y + power.size * 2, { edge: 'top' })
-      circuit.add(control)
-
-      const led = new Light(x + 200, y)
-      circuit.add(led)
-
-      circuit.link(power.output, t.input)
-      circuit.link(control.output, t.control)
-      circuit.link(t.output, led.input)
-    })
+    circuit.setup(() => fn(c, circuit))
     circuit.start()
 
     return () => {
@@ -51,62 +81,7 @@ export function DemoTransistor() {
 
   return (
     <div>
-      <svg className={cx.canvas} width='100%' height='300' ref={ref} />
+      <svg className={cx.canvas} width='100%' height={String(options.height ?? 300)} ref={ref} />
     </div>
   )
-}
-
-export function DemoAndGate() {
-  return null
-
-  // const ref = useRef<SVGSVGElement>(null)
-  //
-  // useEffect(() => {
-  //   const svg = ref.current!
-  //   const dimensions = svg.getBoundingClientRect()
-  //   const c = new Context(svg)
-  //
-  //   const size = 60
-  //   const x = dimensions.width  / 2 - size / 2
-  //   const y = 100
-  //
-  //   const circuit = new Circuit(c)
-  //
-  //   const ta = new Transistor(x - 100, y)
-  //   circuit.add(ta)
-  //   const tb = new Transistor(x + 100, y)
-  //   circuit.add(tb)
-  //
-  //   const power = new Battery(x - 260, y, { canToggle: false })
-  //   circuit.add(power)
-  //
-  //   const a = new Battery(x - 100, y + power.size * 2, { label: 'A' })
-  //   circuit.add(a)
-  //
-  //   const b = new Battery(x + 100, y + power.size * 2, { label: 'B' })
-  //   circuit.add(b)
-  //
-  //   const led = new Light(x + 260, y)
-  //   circuit.add(led)
-  //
-  //   circuit.link(power.output, ta.input)
-  //   circuit.link(a.output, ta.control)
-  //   circuit.link(ta.output, tb.input)
-  //   circuit.link(b.output, tb.control)
-  //   circuit.link(tb.output, led.input)
-  //
-  //   // circuit.link(t.output, led.input)
-  //
-  //   circuit.draw()
-  //
-  //   return () => {
-  //     svg.innerHTML = ''
-  //   }
-  // }, [])
-  //
-  // return (
-  //   <div>
-  //     <svg className={cx.canvas} width='100%' height='300' ref={ref} />
-  //   </div>
-  // )
 }

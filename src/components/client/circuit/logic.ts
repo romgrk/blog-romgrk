@@ -1,6 +1,8 @@
 import EventEmitter from 'eventemitter3'
 import { clamp } from 'rambda'
 
+const RESISTANCE_MAX = Math.pow(2, 31) - 1
+
 let links = [] as Link[]
 
 export function getLinks() {
@@ -19,33 +21,114 @@ type UpdateEvent = {
   update: () => void,
 }
 
-export class Input extends EventEmitter<ChangeEvent> {
+type SinkEvent = {
+  sink: () => void,
+}
+
+export class Input extends EventEmitter<ChangeEvent & SinkEvent> {
   enabled: boolean
+  grounded: boolean
+  links: Link[]
 
   constructor() {
     super()
     this.enabled = false
+    this.grounded = false
+    this.links = []
   }
 
   set(enabled: boolean) {
     if (enabled === this.enabled) return
     this.enabled = enabled
     this.emit('change', this.enabled)
+  }
+
+  sink(grounded: boolean) {
+    if (grounded === this.grounded) return
+    this.grounded = grounded
+    this.updateResistance()
+    this.emit('sink')
+  }
+
+  link(l: Link) {
+    this.links.push(l)
+    if (this.grounded) {
+      l.resist(0)
+    } else {
+      l.resist(RESISTANCE_MAX)
+    }
+  }
+
+  updateResistance() {
+    this.links.forEach(link => {
+      if (this.grounded) {
+        link.resist(0)
+      } else {
+        link.resist(RESISTANCE_MAX)
+      }
+    })
   }
 }
 
-export class Output extends EventEmitter<ChangeEvent> {
+export class Output extends EventEmitter<ChangeEvent & SinkEvent> {
   enabled: boolean
+  links: Link[]
 
   constructor() {
     super()
     this.enabled = false
+    this.links = []
   }
 
   set(enabled: boolean) {
     if (enabled === this.enabled) return
     this.enabled = enabled
     this.emit('change', this.enabled)
+  }
+
+  link(l: Link) {
+    this.links.push(l)
+  }
+}
+
+export class Junction extends EventEmitter<UpdateEvent> {
+  input: Input
+  outputA: Output
+  outputB: Output
+
+  constructor(input?: Input, outputA?: Output, outputB?: Output) {
+    super()
+    this.input = input ?? new Input()
+    this.input.on('change', this.update)
+
+    this.outputA = outputA ?? new Output()
+    this.outputA.on('sink', this.update)
+
+    this.outputB = outputB ?? new Output()
+    this.outputB.on('sink', this.update)
+
+    this.update()
+  }
+
+  update = () => {
+    if (this.input.enabled === false) {
+      this.outputA.set(false)
+      this.outputB.set(false)
+    } else {
+      const resistanceA = this.outputA.links.reduce((t, l) => t + l.resistance, 0)
+      const resistanceB = this.outputB.links.reduce((t, l) => t + l.resistance, 0)
+
+      if (resistanceA > resistanceB) {
+        this.outputA.set(false)
+        this.outputB.set(true)
+      } else if (resistanceA < resistanceB) {
+        this.outputA.set(true)
+        this.outputB.set(false)
+      } else {
+        this.outputA.set(true)
+        this.outputB.set(true)
+      }
+    }
   }
 }
 
@@ -53,6 +136,7 @@ export class Link extends EventEmitter<UpdateEvent> {
   output: Output
   input: Input
   length: number
+  resistance: number
   streams: [number, number][]
 
   constructor(
@@ -60,15 +144,21 @@ export class Link extends EventEmitter<UpdateEvent> {
     input: Input,
   ) {
     super()
-    this.output = output
-    this.input = input
     this.length = 100
+    this.resistance = 0
     this.streams = []
-
-    output.on('change', () => {
-    })
+    this.output = output
+    this.output.link(this)
+    this.input = input
+    this.input.link(this)
 
     links.push(this)
+  }
+
+  resist(resistance: number) {
+    this.resistance = resistance
+    this.emit('update')
+    this.output.emit('sink')
   }
 
   update(dt: number) {
@@ -120,11 +210,14 @@ export class Transistor extends EventEmitter {
     this.output = output ?? new Output()
     this.control = control ?? new Input()
 
-    const update = () => {
-      this.output.set(this.input.enabled && this.control.enabled)
-    }
+    this.input.on('change', this.update)
+    this.control.on('change', this.update)
 
-    this.input.on('change', update)
-    this.control.on('change', update)
+    this.update()
+  }
+
+  update = () => {
+    this.output.set(this.input.enabled && this.control.enabled)
+    this.input.sink(this.control.enabled)
   }
 }

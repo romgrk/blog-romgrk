@@ -34,6 +34,7 @@ const TEXT_HEIGHT = 18
 const COLOR_ON  = 'yellow'
 const COLOR_OFF = '#aaa'
 const COLOR_LINK_OFF = '#555'
+const COLOR_EDGE = '#aaa'
 
 type TextOptions = {
   fill?: string,
@@ -171,7 +172,7 @@ export class Circuit {
     })
   }
 
-  add(e: BaseElement<any>) {
+  add<T extends BaseElement<any>>(e: T): T {
     this.elements.push(e)
     // FIXME: clear resources
     e.on('redraw', this.scheduleElement.bind(null, e))
@@ -363,6 +364,36 @@ class Output extends BaseElement implements Bounded {
   }
 }
 
+export class Junction extends BaseElement implements Bounded {
+  position: Point
+  shape: Box
+  size = 10
+  input: Input
+  outputA: Output
+  outputB: Output
+  logic: logic.Junction
+
+  constructor(x: number, y: number) {
+    super()
+    this.position = point(x, y)
+    this.shape = boxAround(this.position, this.size)
+    this.input = new Input(this.position)
+    this.outputA = new Output(this.position)
+    this.outputB = new Output(this.position)
+    this.logic = new logic.Junction(
+      this.input.logic,
+      this.outputA.logic,
+      this.outputB.logic,
+    )
+    this.children = [] // Don't draw the children
+  }
+
+  draw(_c: Context) {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    return g
+  }
+}
+
 export class Battery extends BaseElement implements Bounded {
   position: Point
   shape: Box
@@ -439,10 +470,62 @@ export class Battery extends BaseElement implements Bounded {
   }
 }
 
-export class Transistor extends BaseElement implements Bounded {
+export class Ground extends BaseElement implements Bounded {
   position: Point
   shape: Box
-  size: number = 60
+  size = 55
+  input: Input
+
+  constructor(
+    x: number,
+    y: number,
+    edge?: EdgeName
+  ) {
+    super()
+    this.position = point(x, y)
+    this.shape = box(
+      x - this.size / 2,
+      y - this.size / 2,
+      x + this.size / 2,
+      y + this.size / 2,
+    )
+    this.input = new Input(pointForEdge(this, edge ?? 'left'))
+    this.input.logic.sink(true)
+    this.children = [this.input]
+  }
+
+  draw(c: Context) {
+    const { shape, size } = this
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+
+    const e = g.appendChild(c.rc.rectangle(
+      shape.xmin,
+      shape.ymin,
+      shape.width,
+      shape.height,
+      { stroke: COLOR_OFF, fill: 'rgba(0, 0, 0, 0.001)', fillStyle: 'solid', seed: this.seed }
+    ))
+    g.appendChild(e)
+    g.appendChild(
+      c.createText(
+        shape.center.x,
+        shape.center.y + TEXT_HEIGHT / 4,
+        'GND',
+        { textAnchor: 'middle', fill: COLOR_OFF }
+      )
+    )
+
+    return g
+  }
+}
+
+export class BigTransistor extends BaseElement implements Bounded {
+  static size = 60
+
+  position: Point
+  shape: Box
+  size: number = BigTransistor.size
   seed = newSeed()
 
   input: Input
@@ -481,17 +564,16 @@ export class Transistor extends BaseElement implements Bounded {
   }
 
   draw(c: Context) {
-    const { position, size } = this
+    const { shape } = this
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-    g.setAttribute('transform', `translate(${position.x - size / 2}, ${position.y - size / 2})`)
 
     g.appendChild(c.rc.rectangle(
-      0,
-      0,
-      size,
-      size,
-      { stroke: '#aaa', fill: 'rgba(255, 0, 0, 0.3)', fillStyle: 'solid', seed: this.seed }
+      shape.xmin,
+      shape.ymin,
+      shape.width,
+      shape.height,
+      { stroke: COLOR_EDGE, fill: COLOR_EDGE, seed: this.seed }
     ))
 
     return g
@@ -591,4 +673,13 @@ export function pointForEdge(b: Bounded, edge: EdgeName) {
 
 export function vectorForEdge(b: Bounded, edge: EdgeName) {
   return vector(b.shape.center, pointForBoxEdge(b.shape, edge)).normalize()
+}
+
+function boxAround(p: Point, size: number) {
+  return box(
+    p.x - size / 2,
+    p.y - size / 2,
+    p.x + size / 2,
+    p.y + size / 2,
+  )
 }
