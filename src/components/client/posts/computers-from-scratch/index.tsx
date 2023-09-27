@@ -12,12 +12,10 @@ export function DemoTransistor() {
   const ref = useRef<SVGSVGElement>(null)
 
   useEffect(() => {
-    const svg = ref.current!
-    const dimensions = svg.getBoundingClientRect()
-    const c = new Context(svg)
+    const c = new Context(ref.current!)
 
     const size = 60
-    const x = dimensions.width  / 2 - size / 2
+    const x = c.dimensions.width  / 2 - size / 2
     const y = 100
 
     const circuit = new Circuit(c)
@@ -28,6 +26,7 @@ export function DemoTransistor() {
       circuit.label(t.input, 'top-left', 'Input')
       circuit.label(t.control, 'bottom-right', 'Control')
       circuit.label(t.output, 'top-right', 'Output')
+      circuit.label(t, 'top', 'THE TRANSISTOR', { fontWeight: 'bold' })
 
       const power = new Battery(x - 200, y, { canToggle: false, label: '+5v' })
       circuit.add(power)
@@ -47,7 +46,7 @@ export function DemoTransistor() {
 
     return () => {
       circuit.stop()
-      svg.innerHTML = ''
+      c.svg.innerHTML = ''
     }
   }, [])
 

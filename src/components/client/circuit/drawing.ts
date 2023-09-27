@@ -38,17 +38,20 @@ const COLOR_LINK_OFF = '#555'
 type TextOptions = {
   fill?: string,
   fontSize?: number,
+  fontWeight?: string,
   textAnchor?: 'start' | 'middle' | 'end',
 }
 
 export class Context {
   rc: RC
   svg: SVGSVGElement
+  dimensions: DOMRect
 
   constructor(svg: SVGSVGElement) {
     this.svg = svg
     this.svg.classList.add('circuit')
     this.rc = rough.svg(svg)
+    this.dimensions = svg.getBoundingClientRect()
   }
 
   createText(x: number, y: number, text: string, options: TextOptions = {}) {
@@ -58,6 +61,8 @@ export class Context {
     element.setAttribute('fill', options.fill ?? '#ccc')
     element.setAttribute('font-size', `${options.fontSize ?? 16}px`)
     element.setAttribute('text-anchor', options.textAnchor ?? 'start')
+    if (options.fontWeight)
+      element.setAttribute('font-weight', options.fontWeight)
     element.textContent = text
     return element
   }
@@ -165,9 +170,8 @@ export class Circuit {
     return this.add(new Link(input, output))
   }
 
-  label(b: Bounded, edge: EdgeName, text: string) {
-    const vector = vectorForEdge(b, edge)
-    const point = pointForEdge(b, edge).translate(vector.multiply(5))
+  label(b: Bounded, edge: EdgeName, text: string, options?: TextOptions) {
+    const point = pointForEdge(b, edge)
 
     if (edge.includes('top'))
       point.y -= TEXT_HEIGHT
@@ -178,7 +182,7 @@ export class Circuit {
       edge.includes('left') ? 'end' :
       edge.includes('right') ? 'start' : 'middle'
 
-    return this.add(new Label(point, text, { textAnchor }))
+    return this.add(new Label(point, text, { ...options, textAnchor }))
   }
 
   scheduleElement = (e: BaseElement<any>) => {
