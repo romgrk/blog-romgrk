@@ -26,7 +26,7 @@ export function DemoTransistor() {
       circuit.label(t.input, 'top-left', 'Input')
       circuit.label(t.control, 'bottom-right', 'Control')
       circuit.label(t.output, 'top-right', 'Output')
-      circuit.label(t, 'top', 'THE TRANSISTOR', { fontWeight: 'bold' })
+      circuit.label(t, 'top', 'THE TRANSISTOR. TADA!', { fontWeight: 'bold' })
 
       const power = new Battery(x - 200, y, { canToggle: false, label: '+5v' })
       circuit.add(power)
@@ -41,7 +41,6 @@ export function DemoTransistor() {
       circuit.link(control.output, t.control)
       circuit.link(t.output, led.input)
     })
-    circuit.draw()
     circuit.start()
 
     return () => {

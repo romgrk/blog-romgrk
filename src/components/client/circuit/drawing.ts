@@ -120,8 +120,9 @@ export class Circuit {
   links: logic.Link[]
   updateInterval: number
   redrawFrame: number
+  options: { update: number, ticks: number }
 
-  constructor(c: Context) {
+  constructor(c: Context, options: Partial<Circuit['options']> = {}) {
     this.elements = []
     this.context = c
     this.links = []
@@ -129,6 +130,11 @@ export class Circuit {
     this.redrawFrame = 0
     this.cache = new Map()
     this.requests = new Set()
+    this.options = {
+      update: 10,
+      ticks: 5,
+      ...options,
+    }
   }
 
   setup(fn: Function) {
@@ -139,10 +145,10 @@ export class Circuit {
   start() {
     this.stop()
     this.updateInterval = setInterval(() => {
-      this.links.forEach(link => {
-        link.update(1)
-      })
-    }, 20) as unknown as number
+      for (let i = 0; i < this.options.ticks; i++) {
+        this.tick()
+      }
+    }, this.options.update) as unknown as number
 
     const redraw = () => {
       this.requests.forEach(this.drawElement)
@@ -151,11 +157,18 @@ export class Circuit {
     }
 
     this.redrawFrame = requestAnimationFrame(redraw)
+    this.draw()
   }
 
   stop() {
     clearInterval(this.updateInterval)
     cancelAnimationFrame(this.redrawFrame)
+  }
+
+  tick() {
+    this.links.forEach(link => {
+      link.update(1)
+    })
   }
 
   add(e: BaseElement<any>) {
