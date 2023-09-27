@@ -8,6 +8,8 @@ import {
   Junction,
   BigTransistor,
 } from '../../circuit/drawing'
+import * as logic from '../../circuit/logic'
+import * as electric from '../../circuit/electric'
 import cx from './index.module.css'
 
 export function DemoTransistor() {
@@ -34,7 +36,7 @@ export function DemoTransistor() {
 }
 
 export function DemoGates() {
-  return createCircuit({}, (ctx, c) => {
+  return createCircuit({ logic: { components: electric } }, (ctx, c) => {
     const x = ctx.dimensions.width  / 2 - BigTransistor.size / 2
     const y = 60
 
@@ -61,6 +63,9 @@ export function DemoGates() {
 
 type CircuitOptions = {
   height?: number,
+  logic?: {
+    components?: logic.Circuit['components'],
+  },
 }
 
 function createCircuit(options: CircuitOptions, fn: (ctx: Context, c: Circuit) => void) {
@@ -68,7 +73,7 @@ function createCircuit(options: CircuitOptions, fn: (ctx: Context, c: Circuit) =
 
   useEffect(() => {
     const c = new Context(ref.current!)
-    const circuit = new Circuit(c)
+    const circuit = new Circuit(c, { components: options.logic?.components })
 
     circuit.setup(() => fn(c, circuit))
     circuit.start()

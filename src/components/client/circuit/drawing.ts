@@ -15,6 +15,8 @@ import { EMPTY_ARRAY } from './prelude'
 import * as logic from './logic'
 import './circuit.css'
 
+let components = logic.getDefaultComponents()
+
 type RC = ReturnType<typeof rough.svg>
 type Options = Parameters<RC['line']>[4]
 type EdgeName =
@@ -118,15 +120,19 @@ export class Circuit {
   cache: Map<any, SVGElement>
   requests: Set<any>
   context: Context
-  links: logic.Link[]
+  logic: logic.Circuit
   updateInterval: number
   redrawFrame: number
-  options: { update: number, ticks: number }
+  options: {
+    update: number,
+    ticks: number,
+    components: logic.Circuit['components'],
+  }
 
   constructor(c: Context, options: Partial<Circuit['options']> = {}) {
     this.elements = []
     this.context = c
-    this.links = []
+    this.logic = new components.Circuit()
     this.updateInterval = 0
     this.redrawFrame = 0
     this.cache = new Map()
@@ -134,12 +140,15 @@ export class Circuit {
     this.options = {
       update: 10,
       ticks: 5,
+      components: logic,
       ...options,
     }
+    this.options.components ??= logic
   }
 
   setup(fn: Function) {
-    logic.setLinks(this.links)
+    components = this.options.components
+    logic.Circuit.set(this.logic)
     fn()
   }
 
@@ -167,7 +176,7 @@ export class Circuit {
   }
 
   tick() {
-    this.links.forEach(link => {
+    this.logic.links.forEach(link => {
       link.update(1)
     })
   }
@@ -234,7 +243,7 @@ class Link extends BaseElement {
     super()
     this.input = input
     this.output = output
-    this.logic = new logic.Link(output.logic, input.logic)
+    this.logic = new components.Link(output.logic, input.logic)
     this.logic.on('update', () => this.emit('redraw'))
     this.logic.length = vector(this.output.position, this.input.position).length
   }
@@ -296,7 +305,7 @@ class Input extends BaseElement implements Bounded {
       p.x + this.size / 2,
       p.y + this.size / 2,
     )
-    this.logic = new logic.Input()
+    this.logic = new components.Input()
     this.logic.on('change', () => this.emit('redraw'))
   }
 
@@ -338,7 +347,7 @@ class Output extends BaseElement implements Bounded {
       p.x + this.size / 2,
       p.y + this.size / 2,
     )
-    this.logic = new logic.Output()
+    this.logic = new components.Output()
     this.logic.on('change', () => this.emit('redraw'))
   }
 
@@ -380,7 +389,7 @@ export class Junction extends BaseElement implements Bounded {
     this.input = new Input(this.position)
     this.outputA = new Output(this.position)
     this.outputB = new Output(this.position)
-    this.logic = new logic.Junction(
+    this.logic = new components.Junction(
       this.input.logic,
       this.outputA.logic,
       this.outputB.logic,
@@ -554,7 +563,7 @@ export class BigTransistor extends BaseElement implements Bounded {
     this.output = new Output(pointForEdge(this, 'right'))
     this.control = new Input(pointForEdge(this, 'bottom'))
 
-    this.logic = new logic.Transistor(
+    this.logic = new components.Transistor(
       this.input.logic,
       this.output.logic,
       this.control.logic,

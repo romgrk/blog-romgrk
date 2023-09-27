@@ -1,16 +1,35 @@
 import EventEmitter from 'eventemitter3'
 import { clamp } from 'rambda'
 
-const RESISTANCE_MAX = Math.pow(2, 31) - 1
-
-let links = [] as Link[]
-
-export function getLinks() {
-  return links
+export function getDefaultComponents() {
+  return {
+    Circuit,
+    Input,
+    Output,
+    Link,
+    Junction,
+    Transistor,
+  }
 }
 
-export function setLinks(l: Link[]) {
-  links = l
+export class Circuit {
+  static create = () => {
+    return new Circuit()
+  }
+
+  static set(c: Circuit) {
+    Circuit.current = c
+  }
+
+  static current = null as unknown as Circuit
+
+  links: Link[]
+  components: ReturnType<typeof getDefaultComponents>
+
+  constructor() {
+    this.links = []
+    this.components = getDefaultComponents()
+  }
 }
 
 type ChangeEvent = {
@@ -27,67 +46,31 @@ type SinkEvent = {
 
 export class Input extends EventEmitter<ChangeEvent & SinkEvent> {
   enabled: boolean
-  grounded: boolean
-  links: Link[]
 
   constructor() {
     super()
     this.enabled = false
-    this.grounded = false
-    this.links = []
   }
 
   set(enabled: boolean) {
     if (enabled === this.enabled) return
     this.enabled = enabled
     this.emit('change', this.enabled)
-  }
-
-  sink(grounded: boolean) {
-    if (grounded === this.grounded) return
-    this.grounded = grounded
-    this.updateResistance()
-    this.emit('sink')
-  }
-
-  link(l: Link) {
-    this.links.push(l)
-    if (this.grounded) {
-      l.resist(0)
-    } else {
-      l.resist(RESISTANCE_MAX)
-    }
-  }
-
-  updateResistance() {
-    this.links.forEach(link => {
-      if (this.grounded) {
-        link.resist(0)
-      } else {
-        link.resist(RESISTANCE_MAX)
-      }
-    })
   }
 }
 
 export class Output extends EventEmitter<ChangeEvent & SinkEvent> {
   enabled: boolean
-  links: Link[]
 
   constructor() {
     super()
     this.enabled = false
-    this.links = []
   }
 
   set(enabled: boolean) {
     if (enabled === this.enabled) return
     this.enabled = enabled
     this.emit('change', this.enabled)
-  }
-
-  link(l: Link) {
-    this.links.push(l)
   }
 }
 
@@ -115,19 +98,8 @@ export class Junction extends EventEmitter<UpdateEvent> {
       this.outputA.set(false)
       this.outputB.set(false)
     } else {
-      const resistanceA = this.outputA.links.reduce((t, l) => t + l.resistance, 0)
-      const resistanceB = this.outputB.links.reduce((t, l) => t + l.resistance, 0)
-
-      if (resistanceA > resistanceB) {
-        this.outputA.set(false)
-        this.outputB.set(true)
-      } else if (resistanceA < resistanceB) {
-        this.outputA.set(true)
-        this.outputB.set(false)
-      } else {
-        this.outputA.set(true)
-        this.outputB.set(true)
-      }
+      this.outputA.set(true)
+      this.outputB.set(true)
     }
   }
 }
@@ -148,11 +120,9 @@ export class Link extends EventEmitter<UpdateEvent> {
     this.resistance = 0
     this.streams = []
     this.output = output
-    this.output.link(this)
     this.input = input
-    this.input.link(this)
 
-    links.push(this)
+    Circuit.current.links.push(this)
   }
 
   resist(resistance: number) {
@@ -218,6 +188,5 @@ export class Transistor extends EventEmitter {
 
   update = () => {
     this.output.set(this.input.enabled && this.control.enabled)
-    this.input.sink(this.control.enabled)
   }
 }
