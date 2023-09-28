@@ -237,10 +237,7 @@ export class Circuit {
   }
 
   findPath(a: Point, b: Point) {
-
     const graph = this.getSpaceGraph()
-
-    const start = Date.now()
     const result = astar.search(graph, a, b)
 
     if (result.length === 0) {
@@ -280,8 +277,6 @@ export class Circuit {
       path += `h${horizontal} `
     }
 
-    const end = Date.now()
-    console.log('PATH', end - start)
     return path
   }
 
