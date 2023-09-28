@@ -7,6 +7,7 @@ import {
   Light,
   Junction,
   BigTransistor,
+  snapToGrid,
 } from '../../circuit/drawing'
 import * as logic from '../../circuit/logic'
 import * as electric from '../../circuit/electric'
@@ -80,22 +81,23 @@ export function DemoTransistor() {
 
 export function DemoGates() {
   return createCircuit({ logic: { components: electric } }, (ctx, c) => {
-    const x = ctx.dimensions.width  / 2 - BigTransistor.size / 2
-    const y = 60
+    const x = snapToGrid(ctx.dimensions.width  / 2 - BigTransistor.size / 2)
+    const y = snapToGrid(100)
 
-    const junction = c.add(new Junction(x - BigTransistor.size, y))
+    const junction = c.add(new Junction(x - 40, y + BigTransistor.size / 2))
 
-    const transistor = c.add(new BigTransistor(x, y + 1.5 * BigTransistor.size))
+    const transistor = c.add(new BigTransistor(x, y))
 
-    const power = c.add(new Battery(x - 200, y, { canToggle: false, label: '+5v' }))
+    const power = c.add(new Battery(x - 120, y + 10, { canToggle: false, label: '+5v' }))
+    // const power = c.add(new Battery(x - 200, y, { canToggle: false, label: '+5v' }))
 
-    const control = c.add(new Battery(x, y + BigTransistor.size + power.size * 2, { edge: 'top' }))
+    const control = c.add(new Battery(x + 10, y + BigTransistor.size + power.size * 1, { edge: 'top' }))
 
-    const ground = c.add(new Ground(x + 200, y + 1.5 * BigTransistor.size))
-    const led = c.add(new Light(x + 200, y))
+    const ground = c.add(new Ground(x + BigTransistor.size + 80, y + 10))
+    const led = c.add(new Light(x + 10, y - control.size * 2))
 
     c.link(power.output, junction.input)
-    c.link(junction.outputA, led.input).logic.resistance = 10
+    c.link(junction.outputA, led.input, { find: true }).logic.resistance = 10
     c.link(junction.outputB, transistor.input, { find: true })
     c.link(transistor.output, ground.input)
     c.link(control.output, transistor.control)

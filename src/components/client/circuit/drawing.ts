@@ -14,6 +14,7 @@ import {
 } from 'romgrk-2d-geometry'
 import { EMPTY_ARRAY } from './prelude'
 import * as logic from './logic'
+import * as electric from './electric'
 import * as astar from './astar'
 import * as svgPath from './svgPath'
 import './circuit.css'
@@ -40,6 +41,9 @@ const COLOR_ON  = 'yellow'
 const COLOR_OFF = '#aaa'
 const COLOR_LINK_OFF = '#555'
 const COLOR_EDGE = '#aaa'
+const COLOR_GRID = 'rgba(255, 255, 255, 0.05)'
+
+const GRID_SIZE = 10
 
 type TextOptions = {
   fill?: string,
@@ -72,42 +76,6 @@ export class Context {
     element.textContent = text
     return element
   }
-
-  createArrow(vectors: Segment[], options?: Options) {
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-
-    vectors.forEach(v => {
-      g.appendChild(this.rc.line(v.start.x, v.start.y, v.end.x, v.end.y, options))
-    })
-
-    const last = vectors[vectors.length - 1]
-    const dx = last.end.x - last.start.x
-    const dy = last.end.y - last.start.y
-    const angle = Math.atan2(dy, dx)
-
-    const size = 12
-    const angleExpanse = tau / 10
-
-    const angle1 = angle - tau / 2 - angleExpanse
-    const angle2 = angle - tau / 2 + angleExpanse
-
-    g.appendChild(this.rc.line(
-      last.end.x,
-      last.end.y,
-      last.end.x + Math.cos(angle1) * size,
-      last.end.y + Math.sin(angle1) * size,
-      options
-    ))
-    g.appendChild(this.rc.line(
-      last.end.x,
-      last.end.y,
-      last.end.x + Math.cos(angle2) * size,
-      last.end.y + Math.sin(angle2) * size,
-      options
-    ))
-
-    return g
-  }
 }
 
 type CircuitEvents = {
@@ -127,6 +95,7 @@ export class Circuit {
   logic: logic.Circuit
   updateInterval: number
   redrawFrame: number
+  grid: SVGGElement | null
   spaceGraph: astar.Graph | null
   options: {
     update: number,
@@ -140,6 +109,7 @@ export class Circuit {
     this.logic = new components.Circuit()
     this.updateInterval = 0
     this.redrawFrame = 0
+    this.grid = null
     this.spaceGraph = null
     this.cache = new Map()
     this.requests = new Set()
@@ -233,7 +203,28 @@ export class Circuit {
   }
 
   draw = () => {
+    this.drawGrid()
     this.children.forEach(this.drawElement)
+  }
+
+  drawGrid() {
+    const { width, height } = this.context.dimensions
+
+    this.grid?.remove()
+    const g = this.grid = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    g.classList.add('circuit-grid')
+
+    for (let x = 0; x < width; x += 10) {
+      this.context.svg.append
+      g.appendChild(this.context.rc.line(x, 0, x, height, { stroke: COLOR_GRID, roughness: 0 }))
+    }
+
+    for (let y = 0; y < height; y += 10) {
+      this.context.svg.append
+      g.appendChild(this.context.rc.line(0, y, width, y, { stroke: COLOR_GRID, roughness: 0 }))
+    }
+
+    this.context.svg.appendChild(g)
   }
 
   findPath(a: Point, b: Point) {
@@ -373,8 +364,8 @@ class Link extends BaseElement {
     ))
 
     this.logic.streams.forEach(stream => {
-      const fStart = stream[0] / this.logic.length
-      const fEnd   = stream[1] / this.logic.length
+      const fStart = this.logic.length ? stream[0] / this.logic.length : 0
+      const fEnd   = this.logic.length ? stream[1] / this.logic.length : 0
 
       const vStart = v.multiply(fStart)
       const vEnd = v.multiply(fEnd)
@@ -404,12 +395,12 @@ class Input extends BaseElement implements Bounded {
 
   constructor(p: Point) {
     super()
-    this.position = p
+    this.position = p.snapToGrid(GRID_SIZE)
     this.shape = box(
-      p.x - this.size / 2,
-      p.y - this.size / 2,
-      p.x + this.size / 2,
-      p.y + this.size / 2,
+      this.position.x - this.size / 2,
+      this.position.y - this.size / 2,
+      this.position.x + this.size / 2,
+      this.position.y + this.size / 2,
     )
     this.logic = new components.Input()
     this.logic.on('change', () => this.emit('redraw'))
@@ -447,12 +438,12 @@ class Output extends BaseElement implements Bounded {
 
   constructor(p: Point) {
     super()
-    this.position = p
+    this.position = p.snapToGrid(GRID_SIZE)
     this.shape = box(
-      p.x - this.size / 2,
-      p.y - this.size / 2,
-      p.x + this.size / 2,
-      p.y + this.size / 2,
+      this.position.x - this.size / 2,
+      this.position.y - this.size / 2,
+      this.position.x + this.size / 2,
+      this.position.y + this.size / 2,
     )
     this.logic = new components.Output()
     this.logic.on('change', () => this.emit('redraw'))
@@ -490,7 +481,7 @@ export class Junction extends BaseElement {
 
   constructor(x: number, y: number) {
     super()
-    this.position = point(x, y)
+    this.position = point(x, y).snapToGrid(GRID_SIZE)
     this.input = new Input(this.position)
     this.outputA = new Output(this.position)
     this.outputB = new Output(this.position)
@@ -509,10 +500,9 @@ export class Junction extends BaseElement {
 }
 
 export class Battery extends BaseElement implements Bounded {
-  position: Point
   shape: Box
   solid = true
-  size = 55
+  size = 4 * GRID_SIZE
   options: { canToggle?: boolean, label?: string, edge?: EdgeName }
   output: Output
 
@@ -522,12 +512,12 @@ export class Battery extends BaseElement implements Bounded {
     options: Battery['options'] = {}
   ) {
     super()
-    this.position = point(x, y)
+    const p = point(x, y).snapToGrid(GRID_SIZE)
     this.shape = box(
-      x - this.size / 2,
-      y - this.size / 2,
-      x + this.size / 2,
-      y + this.size / 2,
+      p.x,
+      p.y,
+      p.x + this.size,
+      p.y + this.size,
     )
     this.output = new Output(pointForEdge(this, options.edge ?? 'right'))
     this.children = [this.output]
@@ -545,10 +535,9 @@ export class Battery extends BaseElement implements Bounded {
   }
 
   draw(c: Context) {
-    const { position, size } = this
+    const { shape, size } = this
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-    g.setAttribute('transform', `translate(${position.x - size / 2}, ${position.y - size / 2})`)
 
     if (this.options.canToggle) {
       g.setAttribute('style', 'cursor: pointer')
@@ -559,8 +548,8 @@ export class Battery extends BaseElement implements Bounded {
     const color = this.output.enabled ? COLOR_ON : COLOR_OFF
 
     const e = c.rc.rectangle(
-      0,
-      0,
+      shape.xmin,
+      shape.ymin,
       size,
       size,
       { stroke: color, fill: 'rgba(0, 0, 0, 0.001)', fillStyle: 'solid', seed: this.seed }
@@ -569,8 +558,8 @@ export class Battery extends BaseElement implements Bounded {
 
     g.appendChild(
       c.createText(
-        size / 2,
-        size / 2 + TEXT_HEIGHT / 4,
+        shape.xmin + size / 2,
+        shape.ymin + size / 2 + TEXT_HEIGHT / 4,
         this.options.label ?
           this.options.label :
         !this.options.canToggle ?
@@ -586,10 +575,9 @@ export class Battery extends BaseElement implements Bounded {
 }
 
 export class Ground extends BaseElement implements Bounded {
-  position: Point
   shape: Box
   solid = true
-  size = 55
+  size = 4 * GRID_SIZE
   input: Input
 
   constructor(
@@ -598,20 +586,22 @@ export class Ground extends BaseElement implements Bounded {
     edge?: EdgeName
   ) {
     super()
-    this.position = point(x, y)
+    const p = point(x, y).snapToGrid(GRID_SIZE)
     this.shape = box(
-      x - this.size / 2,
-      y - this.size / 2,
-      x + this.size / 2,
-      y + this.size / 2,
+      p.x,
+      p.y,
+      p.x + this.size,
+      p.y + this.size,
     )
     this.input = new Input(pointForEdge(this, edge ?? 'left'))
-    this.input.logic.sink(true)
+    if (this.input.logic instanceof electric.Input) {
+      this.input.logic.sink(true)
+    }
     this.children = [this.input]
   }
 
   draw(c: Context) {
-    const { shape, size } = this
+    const { shape } = this
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
 
@@ -637,9 +627,8 @@ export class Ground extends BaseElement implements Bounded {
 }
 
 export class BigTransistor extends BaseElement implements Bounded {
-  static size = 60
+  static size = 6 * GRID_SIZE
 
-  position: Point
   shape: Box
   solid = true
   size: number = BigTransistor.size
@@ -659,12 +648,12 @@ export class BigTransistor extends BaseElement implements Bounded {
     y: number,
   ) {
     super()
-    this.position = point(x, y)
+    const p = point(x, y).snapToGrid(GRID_SIZE)
     this.shape = box(
-      x - this.size / 2,
-      y - this.size / 2,
-      x + this.size / 2,
-      y + this.size / 2,
+      p.x,
+      p.y,
+      p.x + this.size,
+      p.y + this.size,
     )
 
     this.input = new Input(pointForEdge(this, 'left'))
@@ -698,10 +687,9 @@ export class BigTransistor extends BaseElement implements Bounded {
 }
 
 export class Light extends BaseElement implements Bounded {
-  position: Point
   shape: Box
   solid = true
-  size: number = 60
+  size: number = 4 * GRID_SIZE
 
   input: Input
 
@@ -710,12 +698,12 @@ export class Light extends BaseElement implements Bounded {
     y: number,
   ) {
     super()
-    this.position = point(x, y)
+    const p = point(x, y).snapToGrid(GRID_SIZE)
     this.shape = box(
-      x - this.size / 2,
-      y - this.size / 2,
-      x + this.size / 2,
-      y + this.size / 2,
+      p.x,
+      p.y,
+      p.x + this.size,
+      p.y + this.size,
     )
     this.input = new Input(pointForEdge(this, 'left'))
     this.input.on('redraw', () => this.emit('redraw'))
@@ -723,23 +711,22 @@ export class Light extends BaseElement implements Bounded {
   }
 
   draw(c: Context) {
-    const { position, size } = this
+    const { shape, size } = this
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-    g.setAttribute('transform', `translate(${position.x - size / 2}, ${position.y - size / 2})`)
 
     g.appendChild(c.rc.rectangle(
-      0,
-      0,
-      size,
-      size,
+      shape.xmin,
+      shape.ymin,
+      shape.width,
+      shape.height,
       { stroke: '#aaa', fill: 'rgba(0, 0, 0, 0.001)', fillStyle: 'solid', seed: this.seed }
     ))
 
     const fill = this.input.enabled ? 'rgba(255, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.1)'
     g.appendChild(c.rc.circle(
-      0 + size / 2,
-      0 + size / 2,
+      shape.xmin + size / 2,
+      shape.ymin + size / 2,
       size - 15,
       { stroke: '#aaa', fill, fillStyle: 'solid', seed: this.seed }
     ))
@@ -800,4 +787,8 @@ function boxAround(p: Point, size: number) {
     p.x + size / 2,
     p.y + size / 2,
   )
+}
+
+export function snapToGrid(value: number) {
+  return Math.round(value / GRID_SIZE) * GRID_SIZE
 }

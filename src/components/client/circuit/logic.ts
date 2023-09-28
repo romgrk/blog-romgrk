@@ -135,9 +135,9 @@ export class Link extends EventEmitter<UpdateEvent> {
     const isBeforeEmpty = this.streams.length === 0
     const isBeforeFull  = this.streams.length === 1 && this.streams[0][0] === 0 && this.streams[0][1] === this.length
 
-    this.streams.forEach((stream, i) => {
-      stream[0] = clamp(0, this.length, stream[0] + dt)
-      stream[1] = clamp(0, this.length, stream[1] + dt)
+    this.streams.forEach((stream) => {
+      stream[0] = clamp(0, this.length || 1, stream[0] + dt)
+      stream[1] = clamp(0, this.length || 1, stream[1] + dt)
     })
 
     if (this.output.enabled) {
