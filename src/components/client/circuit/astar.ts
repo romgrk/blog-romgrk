@@ -433,6 +433,7 @@ function pathTo(node: GridNode) {
     path.push(current)
     current = current.parent
   }
+  path.push(current)
   return path.reverse()
 }
 

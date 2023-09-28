@@ -9,35 +9,11 @@ import {
   BigTransistor,
   snapToGrid,
 } from '../../circuit/drawing'
-import * as logic from '../../circuit/logic'
 import * as electric from '../../circuit/electric'
 import * as astar from '../../circuit/astar'
 import cx from './index.module.css'
 
-// export function DemoTransistor() {
-//   return createCircuit({}, (ctx, c) => {
-//     const x = ctx.dimensions.width  / 2 - BigTransistor.size / 2
-//     const y = 100
-//
-//     const t = c.add(new BigTransistor(x, y))
-//     c.label(t.input, 'top-left', 'Input')
-//     c.label(t.control, 'bottom-right', 'Control')
-//     c.label(t.output, 'top-right', 'Output')
-//     c.label(t, 'top', 'THE TRANSISTOR. TADA!', { fontWeight: 'bold' })
-//
-//     const power = c.add(new Battery(x - 200, y, { canToggle: false, label: '+5v' }))
-//
-//     const control = c.add(new Battery(x, y + power.size * 2, { edge: 'top' }))
-//
-//     const led = c.add(new Light(x + 200, y))
-//
-//     c.link(power.output, t.input)
-//     c.link(control.output, t.control)
-//     c.link(t.output, led.input)
-//   })
-// }
-
-export function DemoTransistor() {
+export function DemoAstar() {
   const weights = [
     [3,  2, 1, 1, 1, 1, 1, 1],
     [4,  3, 2, 1, 1, 1, 1, 1],
@@ -79,22 +55,38 @@ export function DemoTransistor() {
   )
 }
 
+export function DemoTransistor() {
+  return createCircuit({ height: 270 }, (ctx, c) => {
+    const x = ctx.dimensions.width / 2 - BigTransistor.size / 2
+    const y = 70
+
+    const t = c.add(new BigTransistor(x, y))
+    c.label(t.input, 'top-left', 'Input')
+    c.label(t.control, 'bottom-right', 'Control')
+    c.label(t.output, 'top-right', 'Output')
+    c.label(t, 'top', 'THE TRANSISTOR. TADA!', { fontWeight: 'bold' })
+
+    const power   = c.add(new Battery(x - 160, y + 10, { canToggle: false, label: '+5v' }))
+    const control = c.add(new Battery(x + 10, y + power.size * 3, { edge: 'top' }))
+    const led     = c.add(new Light(x + 160, y + 10))
+
+    c.link(power.output, t.input)
+    c.link(control.output, t.control)
+    c.link(t.output, led.input)
+  })
+}
+
 export function DemoGates() {
-  return createCircuit({ logic: { components: electric } }, (ctx, c) => {
+  return createCircuit({ options: { components: electric } }, (ctx, c) => {
     const x = snapToGrid(ctx.dimensions.width  / 2 - BigTransistor.size / 2)
     const y = snapToGrid(100)
 
-    const junction = c.add(new Junction(x - 40, y + BigTransistor.size / 2))
-
+    const junction   = c.add(new Junction(x - 40, y + BigTransistor.size / 2))
     const transistor = c.add(new BigTransistor(x, y))
-
-    const power = c.add(new Battery(x - 120, y + 10, { canToggle: false, label: '+5v' }))
-    // const power = c.add(new Battery(x - 200, y, { canToggle: false, label: '+5v' }))
-
-    const control = c.add(new Battery(x + 10, y + BigTransistor.size + power.size * 1, { edge: 'top' }))
-
-    const ground = c.add(new Ground(x + BigTransistor.size + 80, y + 10))
-    const led = c.add(new Light(x + 10, y - control.size * 2))
+    const power      = c.add(new Battery(x - 120, y + 10, { canToggle: false, label: '+5v' }))
+    const control    = c.add(new Battery(x + 10, y + BigTransistor.size + power.size * 1, { edge: 'top' }))
+    const ground     = c.add(new Ground(x + BigTransistor.size + 80, y + 10))
+    const led        = c.add(new Light(x + 10, y - control.size * 2))
 
     c.link(power.output, junction.input)
     c.link(junction.outputA, led.input, { find: true }).logic.resistance = 10
@@ -108,9 +100,7 @@ export function DemoGates() {
 
 type CircuitOptions = {
   height?: number,
-  logic?: {
-    components?: logic.Circuit['components'],
-  },
+  options?: Partial<Circuit['options']>,
 }
 
 function createCircuit(options: CircuitOptions, fn: (ctx: Context, c: Circuit) => void) {
@@ -118,7 +108,7 @@ function createCircuit(options: CircuitOptions, fn: (ctx: Context, c: Circuit) =
 
   useEffect(() => {
     const c = new Context(ref.current!)
-    const circuit = new Circuit(c, { components: options.logic?.components })
+    const circuit = new Circuit(c, options.options)
 
     circuit.setup(() => fn(c, circuit))
     circuit.start()
@@ -131,7 +121,12 @@ function createCircuit(options: CircuitOptions, fn: (ctx: Context, c: Circuit) =
 
   return (
     <div>
-      <svg className={cx.canvas} width='100%' height={String(options.height ?? 300)} ref={ref} />
+      <svg
+        className={cx.canvas}
+        width='100%'
+        height={String(options.height ?? 300)}
+        ref={ref}
+      />
     </div>
   )
 }

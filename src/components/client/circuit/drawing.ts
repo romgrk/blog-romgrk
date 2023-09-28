@@ -6,9 +6,10 @@ import {
   segment,
   vector,
   Point,
-  Segment,
+  Path,
   Box,
   Polygon,
+  Segment,
   point2polygon,
   intersectSegment2Box,
 } from 'romgrk-2d-geometry'
@@ -16,7 +17,6 @@ import { EMPTY_ARRAY } from './prelude'
 import * as logic from './logic'
 import * as electric from './electric'
 import * as astar from './astar'
-import * as svgPath from './svgPath'
 import './circuit.css'
 
 let components = logic.getDefaultComponents()
@@ -31,8 +31,6 @@ type EdgeName =
   | 'bottom-right'
   | 'left'
   | 'right'
-
-const tau = Math.PI * 2
 
 const TEXT_HEIGHT = 18
 
@@ -55,6 +53,7 @@ type TextOptions = {
 export class Context {
   rc: RC
   svg: SVGSVGElement
+  links: SVGGElement
   dimensions: DOMRect
 
   constructor(svg: SVGSVGElement) {
@@ -62,6 +61,10 @@ export class Context {
     this.svg.classList.add('circuit')
     this.rc = rough.svg(svg)
     this.dimensions = svg.getBoundingClientRect()
+
+    const links = svg.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'g'))
+    links.classList.add('circuit-links')
+    this.links = links
   }
 
   createText(x: number, y: number, text: string, options: TextOptions = {}) {
@@ -196,9 +199,14 @@ export class Circuit {
   }
 
   drawElement = (e: BaseElement<any>) => {
-    this.cache.get(e)?.remove()
+    const oldChild = this.cache.get(e)
     const child = e.draw(this.context)
-    this.context.svg.appendChild(child)
+    const target = e instanceof Link ? this.context.links : this.context.svg
+    if (oldChild) {
+      target.replaceChild(child, oldChild)
+    } else {
+      target.appendChild(child)
+    }
     this.cache.set(e, child)
   }
 
@@ -229,46 +237,25 @@ export class Circuit {
 
   findPath(a: Point, b: Point) {
     const graph = this.getSpaceGraph()
-    const result = astar.search(graph, a, b)
+    const result = astar.search(graph, a.scale(1 / GRID_SIZE), b.scale(1 / GRID_SIZE))
 
     if (result.length === 0) {
-      return svgPath.getLine(a, b)
+      return new Path([segment(a, b)])
     }
 
-    const [first, ...rest] = result
-
-    let path = `M${first.x},${first.y} `
-    let previous = first
-    let horizontal = 0
-    let vertical = 0
-    for (let node of rest) {
-      const dx = node.x - previous.x
-      const dy = node.y - previous.y
-      if (dx !== 0) {
-        if (vertical !== 0) {
-          path += `v${vertical} `
-          vertical = 0
-        }
-        horizontal += dx
+    const segments = [] as Segment[]
+    const points = result.map(r => new Point(r).scale(GRID_SIZE)).concat(b)
+    for (let i = 0; i < points.length - 1; i++) {
+      const last = segments[segments.length - 1]
+      const current = segment(points[i], points[i + 1])
+      if (last && current.slope === last.slope) {
+        segments[segments.length - 1] = segment(last.ps, current.pe)
+      } else {
+        segments.push(current)
       }
-      if (dy !== 0) {
-        if (horizontal !== 0) {
-          path += `h${horizontal} `
-          horizontal = 0
-        }
-        vertical += dy
-      }
-      previous = node
     }
 
-    if (vertical !== 0) {
-      path += `v${vertical} `
-    }
-    if (horizontal !== 0) {
-      path += `h${horizontal} `
-    }
-
-    return path
+    return new Path(segments)
   }
 
   getSpaceGraph(): astar.Graph {
@@ -276,7 +263,8 @@ export class Circuit {
       return this.spaceGraph
     }
 
-    const { width, height } = this.context.dimensions
+    const width  = Math.ceil(this.context.dimensions.width  / GRID_SIZE)
+    const height = Math.ceil(this.context.dimensions.height / GRID_SIZE)
     const size = width * height
     const spaceData = new Int8Array(size)
     spaceData.fill(1)
@@ -287,11 +275,20 @@ export class Circuit {
       const solid = (child as any).solid as boolean | undefined
       const shape = (child as any).shape as Box | undefined
       if (solid && shape) {
-        polygons.push(new Polygon(shape))
+        const bounds = new Box(
+          shape.xmin / GRID_SIZE,
+          shape.ymin / GRID_SIZE,
+          shape.xmax / GRID_SIZE,
+          shape.ymax / GRID_SIZE,
+        )
+        polygons.push(new Polygon(bounds))
 
-        for (let x = Math.floor(shape.xmin); x < shape.xmax; x++) {
-          for (let y = Math.floor(shape.ymin); y < shape.ymax; y++) {
-            spaceData[y * width + x] = -1
+        for (let x = bounds.xmin; x < bounds.xmax; x++) {
+          for (let y = bounds.ymin; y < bounds.ymax; y++) {
+            const index = y * width + x
+            spaceData[index] = -1
+
+            if (Math.round(index) !== index) { throw new Error('Invalid dimensions') }
           }
         }
       }
@@ -302,7 +299,8 @@ export class Circuit {
 
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        const w = spaceData[y * width + x]
+        const index = y * width + x
+        const w = spaceData[index]
         if (w === -1) {
           continue
         }
@@ -314,7 +312,7 @@ export class Circuit {
         }
         const maxDistance = Math.sqrt(Math.pow(width, 2) + Math.pow(height, 2))
         const weight = (maxDistance - closestDistance) / 10
-        spaceData[y * width + x] = weight
+        spaceData[index] = weight
       }
     }
 
@@ -329,57 +327,39 @@ abstract class BaseElement<T = {}> extends EventEmitter<CircuitEvents & T> {
 }
 
 class Link extends BaseElement {
-  size: number = -1
   input: Input
   output: Output
   logic: logic.Link
-  path: string
+  path: Path
 
   constructor(
     input: Input,
     output: Output,
-    path?: string,
+    path?: Path,
   ) {
     super()
     this.input = input
     this.output = output
-    this.path = path ?? svgPath.getLine(output.position, input.position)
+    this.path = path ?? new Path([segment(output.position, input.position)])
     this.logic = new components.Link(output.logic, input.logic)
     this.logic.on('update', () => this.emit('redraw'))
-    this.logic.length = svgPath.getLength(this.path)
+    this.logic.length = this.path.length
   }
 
   draw(c: Context) {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
     g.classList.add('circuit-link')
 
-    const start = this.output.position
-    const end = this.input.position
-
-    const v = vector(start, end)
-
     g.appendChild(c.rc.path(
-      this.path,
+      this.path.toSVG(),
       { stroke: COLOR_LINK_OFF, seed: this.seed }
     ))
 
     this.logic.streams.forEach(stream => {
-      const fStart = this.logic.length ? stream[0] / this.logic.length : 0
-      const fEnd   = this.logic.length ? stream[1] / this.logic.length : 0
+      const subPath = this.path.slice(stream[0], stream[1])
+      const d = subPath.toSVG()
 
-      const vStart = v.multiply(fStart)
-      const vEnd = v.multiply(fEnd)
-
-      const pStart = start.translate(vStart)
-      const pEnd = start.translate(vEnd)
-
-      g.appendChild(c.rc.line(
-        pStart.x,
-        pStart.y,
-        pEnd.x,
-        pEnd.y,
-        { stroke: COLOR_ON, seed: this.seed },
-      ))
+      g.appendChild(c.rc.path(d, { stroke: COLOR_ON, seed: this.seed }))
     })
 
     return g
