@@ -22,7 +22,6 @@ import './circuit.css'
 let components = logic.getDefaultComponents()
 
 type RC = ReturnType<typeof rough.svg>
-type Options = Parameters<RC['line']>[4]
 type EdgeName =
   | 'top'
   | 'top-left'
@@ -44,6 +43,7 @@ const COLOR_EDGE = '#aaa'
 const COLOR_GRID = 'rgba(255, 255, 255, 0.05)'
 
 const GRID_SIZE = 10
+const DOT_SIZE = 8
 
 type TextOptions = {
   fill?: string,
@@ -390,7 +390,7 @@ class Input extends BaseElement implements Bounded {
   position: Point
   shape: Box
   solid = false
-  size = 10
+  size = DOT_SIZE
   logic: logic.Input
 
   constructor(p: Point) {
@@ -433,7 +433,7 @@ class Output extends BaseElement implements Bounded {
   position: Point
   shape: Box
   solid = false
-  size = 10
+  size = DOT_SIZE
   logic: logic.Output
 
   constructor(p: Point) {
