@@ -10,29 +10,72 @@ import {
 } from '../../circuit/drawing'
 import * as logic from '../../circuit/logic'
 import * as electric from '../../circuit/electric'
+import * as astar from '../../circuit/astar'
 import cx from './index.module.css'
 
+// export function DemoTransistor() {
+//   return createCircuit({}, (ctx, c) => {
+//     const x = ctx.dimensions.width  / 2 - BigTransistor.size / 2
+//     const y = 100
+//
+//     const t = c.add(new BigTransistor(x, y))
+//     c.label(t.input, 'top-left', 'Input')
+//     c.label(t.control, 'bottom-right', 'Control')
+//     c.label(t.output, 'top-right', 'Output')
+//     c.label(t, 'top', 'THE TRANSISTOR. TADA!', { fontWeight: 'bold' })
+//
+//     const power = c.add(new Battery(x - 200, y, { canToggle: false, label: '+5v' }))
+//
+//     const control = c.add(new Battery(x, y + power.size * 2, { edge: 'top' }))
+//
+//     const led = c.add(new Light(x + 200, y))
+//
+//     c.link(power.output, t.input)
+//     c.link(control.output, t.control)
+//     c.link(t.output, led.input)
+//   })
+// }
+
 export function DemoTransistor() {
-  return createCircuit({}, (ctx, c) => {
-    const x = ctx.dimensions.width  / 2 - BigTransistor.size / 2
-    const y = 100
-
-    const t = c.add(new BigTransistor(x, y))
-    c.label(t.input, 'top-left', 'Input')
-    c.label(t.control, 'bottom-right', 'Control')
-    c.label(t.output, 'top-right', 'Output')
-    c.label(t, 'top', 'THE TRANSISTOR. TADA!', { fontWeight: 'bold' })
-
-    const power = c.add(new Battery(x - 200, y, { canToggle: false, label: '+5v' }))
-
-    const control = c.add(new Battery(x, y + power.size * 2, { edge: 'top' }))
-
-    const led = c.add(new Light(x + 200, y))
-
-    c.link(power.output, t.input)
-    c.link(control.output, t.control)
-    c.link(t.output, led.input)
+  const weights = [
+    [3,  2, 1, 1, 1, 1, 1, 1],
+    [4,  3, 2, 1, 1, 1, 1, 1],
+    [5,  4, 3, 2, 1, 1, 1, 1],
+    [-1, 5, 4, 3, 2, 1, 1, 1],
+    [-1, 5, 4, 3, 2, 1, 1, 1],
+  ]
+  const width = weights[0].length
+  const height = weights.length
+  const data = new Int8Array(width * height)
+  weights.forEach((ws, y) => {
+    ws.forEach((w, x) => {
+      data[y * width + x] = w
+    })
   })
+
+  const graph = new astar.Graph(data, weights[0].length, weights.length)
+  const result = astar.search(graph, { x: 0, y: 0 }, { x: 4, y: 4 })
+  return (
+    <div className=''>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {weights.map((ws, y) =>
+          <div style={{ display: 'flex', border: '1px solid #666' }}>
+            {ws.map((w, x) =>
+              <div style={{
+                display: 'flex', flex: '1', border: '1px solid #666',
+                backgroundColor: result.some(n => n.x === x && n.y === y) ? 'rgba(255, 255, 0, 0.2)' : undefined
+              }}>
+                {w === -1 ? 'x' : <span>&nbsp;</span>}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <div className=''>
+        {JSON.stringify(result.map(n => ({ x: n.x, y: n.y })))}
+      </div>
+    </div>
+  )
 }
 
 export function DemoGates() {
@@ -53,7 +96,7 @@ export function DemoGates() {
 
     c.link(power.output, junction.input)
     c.link(junction.outputA, led.input).logic.resistance = 10
-    c.link(junction.outputB, transistor.input)
+    c.link(junction.outputB, transistor.input, { find: true })
     c.link(transistor.output, ground.input)
     c.link(control.output, transistor.control)
 

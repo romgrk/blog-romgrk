@@ -8,11 +8,14 @@ import {
   Point,
   Segment,
   Box,
-  Shape,
+  Polygon,
+  point2polygon,
   intersectSegment2Box,
 } from 'romgrk-2d-geometry'
 import { EMPTY_ARRAY } from './prelude'
 import * as logic from './logic'
+import * as astar from './astar'
+import * as svgPath from './svgPath'
 import './circuit.css'
 
 let components = logic.getDefaultComponents()
@@ -113,16 +116,18 @@ type CircuitEvents = {
 
 interface Bounded {
   shape: Box
+  solid: boolean
 }
 
 export class Circuit {
-  elements: BaseElement<any>[]
+  children: BaseElement<any>[]
   cache: Map<any, SVGElement>
   requests: Set<any>
   context: Context
   logic: logic.Circuit
   updateInterval: number
   redrawFrame: number
+  spaceGraph: astar.Graph | null
   options: {
     update: number,
     ticks: number,
@@ -130,11 +135,12 @@ export class Circuit {
   }
 
   constructor(c: Context, options: Partial<Circuit['options']> = {}) {
-    this.elements = []
+    this.children = []
     this.context = c
     this.logic = new components.Circuit()
     this.updateInterval = 0
     this.redrawFrame = 0
+    this.spaceGraph = null
     this.cache = new Map()
     this.requests = new Set()
     this.options = {
@@ -182,15 +188,22 @@ export class Circuit {
   }
 
   add<T extends BaseElement<any>>(e: T): T {
-    this.elements.push(e)
+    this.children.push(e)
     // FIXME: clear resources
     e.on('redraw', this.scheduleElement.bind(null, e))
     e.children.forEach(c => this.add(c))
+    this.spaceGraph = null
     return e
   }
 
-  link(output: Output, input: Input) {
-    return this.add(new Link(input, output))
+  link(output: Output, input: Input, options: { find?: boolean } = {}) {
+    return this.add(
+      new Link(
+        input,
+        output,
+        options.find ? this.findPath(output.position, input.position) : undefined
+      )
+    )
   }
 
   label(b: Bounded, edge: EdgeName, text: string, options?: TextOptions) {
@@ -220,7 +233,106 @@ export class Circuit {
   }
 
   draw = () => {
-    this.elements.forEach(this.drawElement)
+    this.children.forEach(this.drawElement)
+  }
+
+  findPath(a: Point, b: Point) {
+
+    const graph = this.getSpaceGraph()
+
+    const start = Date.now()
+    const result = astar.search(graph, a, b)
+
+    if (result.length === 0) {
+      return svgPath.getLine(a, b)
+    }
+
+    const [first, ...rest] = result
+
+    let path = `M${first.x},${first.y} `
+    let previous = first
+    let horizontal = 0
+    let vertical = 0
+    for (let node of rest) {
+      const dx = node.x - previous.x
+      const dy = node.y - previous.y
+      if (dx !== 0) {
+        if (vertical !== 0) {
+          path += `v${vertical} `
+          vertical = 0
+        }
+        horizontal += dx
+      }
+      if (dy !== 0) {
+        if (horizontal !== 0) {
+          path += `h${horizontal} `
+          horizontal = 0
+        }
+        vertical += dy
+      }
+      previous = node
+    }
+
+    if (vertical !== 0) {
+      path += `v${vertical} `
+    }
+    if (horizontal !== 0) {
+      path += `h${horizontal} `
+    }
+
+    const end = Date.now()
+    console.log('PATH', end - start)
+    return path
+  }
+
+  getSpaceGraph(): astar.Graph {
+    if (this.spaceGraph) {
+      return this.spaceGraph
+    }
+
+    const { width, height } = this.context.dimensions
+    const size = width * height
+    const spaceData = new Int8Array(size)
+    spaceData.fill(1)
+
+    const polygons = [] as Polygon[]
+
+    const drawObstacle = (child: BaseElement<any>) => {
+      const solid = (child as any).solid as boolean | undefined
+      const shape = (child as any).shape as Box | undefined
+      if (solid && shape) {
+        polygons.push(new Polygon(shape))
+
+        for (let x = Math.floor(shape.xmin); x < shape.xmax; x++) {
+          for (let y = Math.floor(shape.ymin); y < shape.ymax; y++) {
+            spaceData[y * width + x] = -1
+          }
+        }
+      }
+      child.children.forEach(drawObstacle)
+    }
+
+    this.children.forEach(drawObstacle)
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const w = spaceData[y * width + x]
+        if (w === -1) {
+          continue
+        }
+        const point = new Point(x, y)
+        let closestDistance = Math.pow(2, 30)
+        for (const polygon of polygons) {
+          const distance = point2polygon(point, polygon)[0]
+          closestDistance = Math.min(distance, closestDistance)
+        }
+        const maxDistance = Math.sqrt(Math.pow(width, 2) + Math.pow(height, 2))
+        const weight = (maxDistance - closestDistance) / 10
+        spaceData[y * width + x] = weight
+      }
+    }
+
+    return (this.spaceGraph = new astar.Graph(spaceData, width, height))
   }
 }
 
@@ -235,17 +347,20 @@ class Link extends BaseElement {
   input: Input
   output: Output
   logic: logic.Link
+  path: string
 
   constructor(
     input: Input,
     output: Output,
+    path?: string,
   ) {
     super()
     this.input = input
     this.output = output
+    this.path = path ?? svgPath.getLine(output.position, input.position)
     this.logic = new components.Link(output.logic, input.logic)
     this.logic.on('update', () => this.emit('redraw'))
-    this.logic.length = vector(this.output.position, this.input.position).length
+    this.logic.length = svgPath.getLength(this.path)
   }
 
   draw(c: Context) {
@@ -255,15 +370,10 @@ class Link extends BaseElement {
     const start = this.output.position
     const end = this.input.position
 
-    const line = segment(start, end)
     const v = vector(start, end)
 
-    // g.appendChild(c.createArrow([line], { stroke: COLOR_LINK_OFF, seed: this.seed }))
-    g.appendChild(c.rc.line(
-      line.start.x,
-      line.start.y,
-      line.end.x,
-      line.end.y,
+    g.appendChild(c.rc.path(
+      this.path,
       { stroke: COLOR_LINK_OFF, seed: this.seed }
     ))
 
@@ -293,6 +403,7 @@ class Link extends BaseElement {
 class Input extends BaseElement implements Bounded {
   position: Point
   shape: Box
+  solid = false
   size = 10
   logic: logic.Input
 
@@ -335,6 +446,7 @@ class Input extends BaseElement implements Bounded {
 class Output extends BaseElement implements Bounded {
   position: Point
   shape: Box
+  solid = false
   size = 10
   logic: logic.Output
 
@@ -373,9 +485,8 @@ class Output extends BaseElement implements Bounded {
   }
 }
 
-export class Junction extends BaseElement implements Bounded {
+export class Junction extends BaseElement {
   position: Point
-  shape: Box
   size = 10
   input: Input
   outputA: Output
@@ -385,7 +496,6 @@ export class Junction extends BaseElement implements Bounded {
   constructor(x: number, y: number) {
     super()
     this.position = point(x, y)
-    this.shape = boxAround(this.position, this.size)
     this.input = new Input(this.position)
     this.outputA = new Output(this.position)
     this.outputB = new Output(this.position)
@@ -406,6 +516,7 @@ export class Junction extends BaseElement implements Bounded {
 export class Battery extends BaseElement implements Bounded {
   position: Point
   shape: Box
+  solid = true
   size = 55
   options: { canToggle?: boolean, label?: string, edge?: EdgeName }
   output: Output
@@ -482,6 +593,7 @@ export class Battery extends BaseElement implements Bounded {
 export class Ground extends BaseElement implements Bounded {
   position: Point
   shape: Box
+  solid = true
   size = 55
   input: Input
 
@@ -534,6 +646,7 @@ export class BigTransistor extends BaseElement implements Bounded {
 
   position: Point
   shape: Box
+  solid = true
   size: number = BigTransistor.size
   seed = newSeed()
 
@@ -592,6 +705,7 @@ export class BigTransistor extends BaseElement implements Bounded {
 export class Light extends BaseElement implements Bounded {
   position: Point
   shape: Box
+  solid = true
   size: number = 60
 
   input: Input
