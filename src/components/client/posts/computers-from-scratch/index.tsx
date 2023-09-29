@@ -76,10 +76,11 @@ export function DemoTransistor() {
   })
 }
 
-export function DemoGates() {
+
+export function DemoNotGate() {
   return createCircuit({ options: { components: electric } }, (ctx, c) => {
     const x = snapToGrid(ctx.dimensions.width  / 2 - BigTransistor.size / 2)
-    const y = snapToGrid(100)
+    const y = snapToGrid(120)
 
     const junction   = c.add(new Junction(x - 40, y + BigTransistor.size / 2))
     const transistor = c.add(new BigTransistor(x, y))
@@ -94,6 +95,8 @@ export function DemoGates() {
     c.link(transistor.output, ground.input)
     c.link(control.output, transistor.control)
 
+    c.label(led, 'top', 'Output')
+    c.label(control, 'bottom', 'Input')
   })
 }
 
