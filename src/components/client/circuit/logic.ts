@@ -210,3 +210,26 @@ export class Not extends EventEmitter {
     this.output.set(!this.input.enabled)
   }
 }
+
+export class And extends EventEmitter {
+  inputA: Input
+  inputB: Input
+  output: Output
+
+  constructor(inputA?: Input, inputB?: Input, output?: Output) {
+    super()
+
+    this.inputA = inputA ?? new Input()
+    this.inputB = inputB ?? new Input()
+    this.output = output ?? new Output()
+
+    this.inputA.on('change', this.update)
+    this.inputB.on('change', this.update)
+
+    this.update()
+  }
+
+  update = () => {
+    this.output.set(this.inputA.enabled && this.inputB.enabled)
+  }
+}

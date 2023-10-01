@@ -9,6 +9,7 @@ import {
   Box,
   Polygon,
   Segment,
+  Shape,
   point2polygon,
   intersectSegment2Box,
 } from 'romgrk-2d-geometry'
@@ -22,6 +23,7 @@ let components = logic.getDefaultComponents()
 
 const TAU = Math.PI * 2
 
+type AnyShape = Shape<Box | Path>
 type RC = ReturnType<typeof rough.svg>
 type EdgeName =
   | 'top'
@@ -59,7 +61,7 @@ const COLOR_EDGE = '#aaa'
 const COLOR_GRID = 'rgba(255, 255, 255, 0.05)'
 
 const GRID_SIZE = 10
-const DOT_SIZE = 8
+const DOT_SIZE = 6
 
 type TextOptions = {
   fill?: string,
@@ -268,7 +270,7 @@ export class Circuit {
       const last = segments[segments.length - 1]
       const current = segment(points[i], points[i + 1])
       if (last && current.slope === last.slope) {
-        segments[segments.length - 1] = segment(last.ps, current.pe)
+        segments[segments.length - 1] = segment(last.start, current.end)
       } else {
         segments.push(current)
       }
@@ -294,7 +296,7 @@ export class Circuit {
       const klass = child.constructor as typeof BaseElement
       const shape = child.shape
       if (klass.passThrough === PassThrough.NO) {
-        const bounds = shape.scale(1 / GRID_SIZE)
+        const bounds = shape.scale(1 / GRID_SIZE).box
         obstacles.push(new Polygon(bounds))
 
         for (let x = bounds.xmin; x < bounds.xmax; x++) {
@@ -339,14 +341,46 @@ type PlacementOptions = {
   orientation?: Orientation
 }
 
+const EMPTY_PLACEMENT = { x: 0, y: 0 }
+
 abstract class BaseElement<T = {}> extends EventEmitter<CircuitEvents & T> {
   static passThrough = PassThrough.YES
-  static shape = Box.EMPTY
+  static shape: AnyShape = Box.EMPTY
 
   seed = newSeed()
-  shape = Box.EMPTY
+  shape = Box.EMPTY as AnyShape
   children = EMPTY_ARRAY as BaseElement<any>[]
   abstract draw(_: Context): SVGElement | null
+
+  constructor(p: PlacementOptions) {
+    super()
+    this.shape = 'shape' in this.constructor ? place(this.constructor as any, p) : Box.EMPTY
+  }
+
+  get box() {
+    return this.shape.box
+  }
+
+  rotate(p: PlacementOptions, inputCenter?: Point) {
+    if (p.orientation !== undefined) {
+      const center = inputCenter ?? this.shape.box.center
+
+      if (this.shape instanceof Box) {
+        this.shape = new Polygon(this.shape).rotate(p.orientation, center).box.snapToGrid(GRID_SIZE)
+      } else {
+        throw new Error('unreachable')
+      }
+
+      const maybeP = this as any
+      if (maybeP.position) {
+        maybeP.position = (maybeP.position as Point).rotate(p.orientation, center)
+      }
+
+      for (const child of this.children) {
+        child.rotate(p, center)
+      }
+    }
+  }
 }
 
 class Link extends BaseElement {
@@ -362,7 +396,7 @@ class Link extends BaseElement {
     output: Output,
     path?: Path,
   ) {
-    super()
+    super(EMPTY_PLACEMENT)
     this.input = input
     this.output = output
     this.path = path ?? new Path([segment(output.position, input.position)])
@@ -401,9 +435,8 @@ class Input extends BaseElement {
   logic: logic.Input
 
   constructor(p: PlacementOptions) {
-    super()
+    super(p)
     this.position = point(p).snapToGrid(GRID_SIZE)
-    this.shape = place(Input, p)
     this.logic = new components.Input()
     this.logic.on('change', () => this.emit('redraw'))
   }
@@ -441,9 +474,8 @@ class Output extends BaseElement {
   logic: logic.Output
 
   constructor(p: PlacementOptions) {
-    super()
+    super(p)
     this.position = point(p).snapToGrid(GRID_SIZE)
-    this.shape = place(Input, p)
     this.logic = new components.Output()
     this.logic.on('change', () => this.emit('redraw'))
   }
@@ -480,7 +512,7 @@ export class Junction extends BaseElement {
   logic: logic.Junction
 
   constructor(p: PlacementOptions) {
-    super()
+    super(p)
     this.position = point(p).snapToGrid(GRID_SIZE)
     this.input = new Input(this.position)
     this.outputA = new Output(this.position)
@@ -506,7 +538,7 @@ export class Label extends BaseElement {
   options: TextOptions
 
   constructor(p: PlacementOptions, text: string, options: Label['options'] = {}) {
-    super()
+    super(p)
     this.position = point(p)
     this.text = text
     this.options = options
@@ -522,7 +554,6 @@ export class Battery extends BaseElement {
   static passThrough = PassThrough.NO
   static shape = new Box(0, 0, 4 * GRID_SIZE, 4 * GRID_SIZE)
 
-  shape: Box
   size = 4 * GRID_SIZE
   options: { canToggle?: boolean, label?: string }
   output: Output
@@ -531,11 +562,10 @@ export class Battery extends BaseElement {
     p: PlacementOptions,
     options: Battery['options'] = {}
   ) {
-    super()
-    this.shape = place(Battery, p)
+    super(p)
     this.output = new Output(pointForEdge(this, 'top'))
     this.children = [this.output]
-    rotate(this, p)
+    this.rotate(p)
     this.options = {
       canToggle: true,
       ...options,
@@ -564,8 +594,8 @@ export class Battery extends BaseElement {
     const color = this.output.enabled ? COLOR_ON : COLOR_OFF
 
     const e = c.rc.rectangle(
-      shape.xmin,
-      shape.ymin,
+      shape.box.xmin,
+      shape.box.ymin,
       size,
       size,
       { stroke: color, fill: 'rgba(0, 0, 0, 0.001)', fillStyle: 'solid', seed: this.seed }
@@ -574,8 +604,8 @@ export class Battery extends BaseElement {
 
     g.appendChild(
       c.createText(
-        shape.xmin + size / 2,
-        shape.ymin + size / 2 + TEXT_HEIGHT / 4,
+        shape.box.xmin + size / 2,
+        shape.box.ymin + size / 2 + TEXT_HEIGHT / 4,
         this.options.label ?
           this.options.label :
         !this.options.canToggle ?
@@ -594,18 +624,16 @@ export class Ground extends BaseElement {
   static passThrough = PassThrough.NO
   static shape = new Box(0, 0, 4 * GRID_SIZE, 4 * GRID_SIZE)
 
-  shape: Box
   input: Input
 
   constructor(p: PlacementOptions) {
-    super()
-    this.shape = place(Ground, p)
+    super(p)
     this.input = new Input(pointForEdge(this, 'left'))
     if (this.input.logic instanceof electric.Input) {
       this.input.logic.sink(true)
     }
     this.children = [this.input]
-    rotate(this, p)
+    this.rotate(p)
   }
 
   draw(c: Context) {
@@ -614,17 +642,17 @@ export class Ground extends BaseElement {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
 
     const e = g.appendChild(c.rc.rectangle(
-      shape.xmin,
-      shape.ymin,
-      shape.width,
-      shape.height,
+      shape.box.xmin,
+      shape.box.ymin,
+      shape.box.width,
+      shape.box.height,
       { stroke: COLOR_OFF, fill: 'rgba(0, 0, 0, 0.001)', fillStyle: 'solid', seed: this.seed }
     ))
     g.appendChild(e)
     g.appendChild(
       c.createText(
-        shape.center.x,
-        shape.center.y + TEXT_HEIGHT / 4,
+        shape.box.center.x,
+        shape.box.center.y + TEXT_HEIGHT / 4,
         'GND',
         { textAnchor: 'middle', fill: COLOR_OFF }
       )
@@ -638,9 +666,6 @@ export class BigTransistor extends BaseElement {
   static passThrough = PassThrough.NO
   static shape = new Box(0, 0, 6 * GRID_SIZE, 6 * GRID_SIZE)
 
-  shape: Box
-  seed = newSeed()
-
   input: Input
   output: Output
   control: Input
@@ -651,8 +676,7 @@ export class BigTransistor extends BaseElement {
   }
 
   constructor(p: PlacementOptions) {
-    super()
-    this.shape = place(BigTransistor, p)
+    super(p)
 
     this.input = new Input(pointForEdge(this, 'left'))
     this.output = new Output(pointForEdge(this, 'right'))
@@ -665,7 +689,7 @@ export class BigTransistor extends BaseElement {
     )
 
     this.children = [this.input, this.control, this.output]
-    rotate(this, p)
+    this.rotate(p)
   }
 
   draw(c: Context) {
@@ -674,10 +698,10 @@ export class BigTransistor extends BaseElement {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
 
     g.appendChild(c.rc.rectangle(
-      shape.xmin,
-      shape.ymin,
-      shape.width,
-      shape.height,
+      shape.box.xmin,
+      shape.box.ymin,
+      shape.box.width,
+      shape.box.height,
       { stroke: COLOR_EDGE, fill: COLOR_EDGE, seed: this.seed }
     ))
 
@@ -689,16 +713,14 @@ export class Light extends BaseElement {
   static passThrough = PassThrough.NO
   static shape = new Box(0, 0, 4 * GRID_SIZE, 4 * GRID_SIZE)
 
-  shape: Box
   input: Input
 
   constructor(p: PlacementOptions) {
-    super()
-    this.shape = place(Light, p)
+    super(p)
     this.input = new Input(pointForEdge(this, 'bottom'))
     this.input.on('redraw', () => this.emit('redraw'))
     this.children = [this.input]
-    rotate(this, p)
+    this.rotate(p)
   }
 
   draw(c: Context) {
@@ -707,18 +729,18 @@ export class Light extends BaseElement {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
 
     g.appendChild(c.rc.rectangle(
-      shape.xmin,
-      shape.ymin,
-      shape.width,
-      shape.height,
+      shape.box.xmin,
+      shape.box.ymin,
+      shape.box.width,
+      shape.box.height,
       { stroke: '#aaa', fill: 'rgba(0, 0, 0, 0.001)', fillStyle: 'solid', seed: this.seed }
     ))
 
     const fill = this.input.enabled ? 'rgba(255, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.1)'
     g.appendChild(c.rc.circle(
-      shape.xmin + shape.width / 2,
-      shape.ymin + shape.width / 2,
-      shape.width - 15,
+      shape.box.xmin + shape.box.width / 2,
+      shape.box.ymin + shape.box.width / 2,
+      shape.box.width - 15,
       { stroke: '#aaa', fill, fillStyle: 'solid', seed: this.seed }
     ))
 
@@ -728,10 +750,12 @@ export class Light extends BaseElement {
 
 export class Not extends BaseElement {
   static passThrough = PassThrough.NO
-  static shape = new Box(0, 0, 2 * GRID_SIZE, 4 * GRID_SIZE)
-
-  shape: Box
-  seed = newSeed()
+  static shape = Path.fromPoints([
+    new Point(2 * GRID_SIZE, 0),
+    new Point(4 * GRID_SIZE, 4 * GRID_SIZE),
+    new Point(0, 4 * GRID_SIZE),
+    new Point(2 * GRID_SIZE, 0),
+  ])
 
   input: Input
   output: Output
@@ -741,8 +765,7 @@ export class Not extends BaseElement {
   }
 
   constructor(p: PlacementOptions) {
-    super()
-    this.shape = place(Not, p)
+    super(p)
 
     this.input = new Input(pointForEdge(this, 'bottom'))
     this.output = new Output(pointForEdge(this, 'top'))
@@ -753,25 +776,73 @@ export class Not extends BaseElement {
     )
 
     this.children = [this.input, this.output]
-    rotate(this, p)
+    this.rotate(p)
   }
 
   draw(c: Context) {
-    const { shape } = this
+    const shape = this.shape as Path
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
 
-    g.appendChild(c.rc.rectangle(
-      shape.xmin,
-      shape.ymin,
-      shape.width,
-      shape.height,
+    g.appendChild(c.rc.path(
+      shape.toSVG(),
       { stroke: COLOR_EDGE, fill: COLOR_EDGE, seed: this.seed }
     ))
 
     return g
   }
+}
 
+export class And extends BaseElement {
+  static passThrough = PassThrough.NO
+  static shape = Path.fromPoints([
+    new Point(2 * GRID_SIZE, 0),
+    new Point(4 * GRID_SIZE, 2 * GRID_SIZE),
+    new Point(4 * GRID_SIZE, 4 * GRID_SIZE),
+    new Point(0, 4 * GRID_SIZE),
+    new Point(0, 2 * GRID_SIZE),
+    new Point(2 * GRID_SIZE, 0),
+  ])
+
+  inputA: Input
+  inputB: Input
+  output: Output
+  logic: {
+    inputA: logic.Input
+    inputB: logic.Input
+    output: logic.Output
+  }
+
+  constructor(p: PlacementOptions) {
+    super(p)
+    this.shape = place(this.constructor as any, p)
+
+    this.inputA = new Input(pointForEdge(this, 'bottom').translate(- 1 * GRID_SIZE, 0))
+    this.inputB = new Input(pointForEdge(this, 'bottom').translate(+ 1 * GRID_SIZE, 0))
+    this.output = new Output(pointForEdge(this, 'top'))
+
+    this.logic = new logic.And(
+      this.inputA.logic,
+      this.inputB.logic,
+      this.output.logic,
+    )
+
+    this.children = [this.inputA, this.inputB, this.output]
+    this.rotate(p)
+  }
+
+  draw(c: Context) {
+    const shape = this.shape as Path
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+
+    g.appendChild(c.rc.path(
+      shape.toSVG(),
+      { stroke: COLOR_EDGE, fill: COLOR_EDGE, seed: this.seed }
+    ))
+
+    return g
+  }
 }
 
 
@@ -799,43 +870,22 @@ export function pointForBoxEdge(b: Box, edge: EdgeName) {
 }
 
 export function pointForEdge(b: BaseElement, edge: EdgeName) {
-  return pointForBoxEdge(b.shape, edge)
+  return pointForBoxEdge(b.shape.box, edge)
 }
 
 export function vectorForEdge(b: BaseElement, edge: EdgeName) {
-  return vector(b.shape.center, pointForBoxEdge(b.shape, edge)).normalize()
+  return vector(b.shape.box.center, pointForBoxEdge(b.shape.box, edge)).normalize()
 }
 
 export function snapToGrid(value: number) {
   return Math.round(value / GRID_SIZE) * GRID_SIZE
 }
 
-function place(klass: { shape: Box }, p: PlacementOptions) {
+function place<T>(klass: { shape: Shape<T> }, p: PlacementOptions): T {
   return klass.shape.translate(
-    p.x - klass.shape.width  / 2,
-    p.y - klass.shape.height / 2,
+    p.x - klass.shape.box.width  / 2,
+    p.y - klass.shape.box.height / 2,
   )
-}
-
-function rotate(self: BaseElement, p: PlacementOptions, inputCenter?: Point) {
-  if (p.orientation !== undefined) {
-    const center = inputCenter ?? self.shape.center
-
-    if (self.shape instanceof Box) {
-      self.shape = new Polygon(self.shape).rotate(p.orientation, center).box.snapToGrid(GRID_SIZE)
-    } else {
-      throw new Error('unreachable')
-    }
-
-    const maybeP = self as any
-    if (maybeP.position) {
-      maybeP.position = (maybeP.position as Point).rotate(p.orientation, center)
-    }
-
-    for (const child of self.children) {
-      rotate(child, p, center)
-    }
-  }
 }
 
 function getWeight(distance: number) {
