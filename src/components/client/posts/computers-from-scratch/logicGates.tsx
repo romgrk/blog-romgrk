@@ -1,8 +1,5 @@
-import { useEffect, useRef } from 'react'
 import {
   Battery,
-  Context,
-  Circuit,
   Ground,
   Light,
   Junction,
@@ -12,8 +9,7 @@ import {
   RIGHT,
 } from '../../circuit/drawing'
 import * as electric from '../../circuit/electric'
-import cx from './index.module.css'
-
+import { createCircuit } from './utils'
 
 export function DemoNotGate() {
   return (
@@ -64,37 +60,17 @@ export function DemoNotGateLogic() {
   })
 }
 
-
-type CircuitOptions = {
-  height?: number,
-  options?: Partial<Circuit['options']>,
-}
-
-function createCircuit(options: CircuitOptions, fn: (ctx: Context, c: Circuit) => void) {
-  const ref = useRef<SVGSVGElement>(null)
-
-  useEffect(() => {
-    const c = new Context(ref.current!)
-    const circuit = new Circuit(c, options.options)
-
-    circuit.setup(() => fn(c, circuit))
-    circuit.start()
-
-    return () => {
-      circuit.stop()
-      c.svg.innerHTML = ''
-    }
-  }, [])
-
-  return (
-    <div>
-      <svg
-        className={cx.canvas}
-        width='100%'
-        height={String(options.height ?? 300)}
-        ref={ref}
-      />
-    </div>
-  )
-}
+// export function DemoPath() {
+//   return createCircuit({ width: 150, height: 100, options: { components: electric } }, (ctx, c) => {
+//
+//     const power    = c.add(new Battery({ x: 0, y: 40, orientation: RIGHT }, { canToggle: false, label: '+5v' }))
+//     const junction = c.add(new Junction({ x: 40, y: 40, orientation: RIGHT }))
+//     const led1     = c.add(new Light({ x: 80, y: 40, orientation: RIGHT }))
+//     const led2     = c.add(new Light({ x: 140, y: 40, orientation: RIGHT }))
+//
+//     c.link(power.output, junction.input)
+//     c.link(junction.outputA, led1.input)
+//     c.link(junction.outputB, led2.input, { find: true })
+//   })
+// }
 

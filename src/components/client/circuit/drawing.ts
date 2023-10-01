@@ -287,16 +287,16 @@ export class Circuit {
     const height = Math.ceil(this.context.dimensions.height / GRID_SIZE)
     const size = width * height
     const spaceData = new Int8Array(size)
-    spaceData.fill(1)
+    spaceData.fill(10)
 
-    const polygons = [] as Polygon[]
+    const obstacles = [] as Polygon[]
 
     const drawObstacle = (child: BaseElement<any>) => {
       const klass = child.constructor as typeof BaseElement
       const shape = child.shape
       if (klass.passThrough === PassThrough.NO) {
         const bounds = shape.scale(1 / GRID_SIZE)
-        polygons.push(new Polygon(bounds))
+        obstacles.push(new Polygon(bounds))
 
         for (let x = bounds.xmin; x < bounds.xmax; x++) {
           for (let y = bounds.ymin; y < bounds.ymax; y++) {
@@ -321,12 +321,11 @@ export class Circuit {
         }
         const point = new Point(x, y)
         let closestDistance = Math.pow(2, 30)
-        for (const polygon of polygons) {
+        for (const polygon of obstacles) {
           const distance = point2polygon(point, polygon)[0]
           closestDistance = Math.min(distance, closestDistance)
         }
-        const maxDistance = Math.sqrt(Math.pow(width, 2) + Math.pow(height, 2))
-        const weight = (maxDistance - closestDistance) / 10
+        const weight = getWeight(closestDistance)
         spaceData[index] = weight
       }
     }
@@ -344,7 +343,7 @@ type PlacementOptions = {
 }
 
 abstract class BaseElement<T = {}> extends EventEmitter<CircuitEvents & T> {
-  static passThrough = PassThrough.NO
+  static passThrough = PassThrough.YES
   static shape = EMPTY_BOX
 
   seed = newSeed()
@@ -475,6 +474,8 @@ class Output extends BaseElement {
 }
 
 export class Junction extends BaseElement {
+  static passThrough = PassThrough.YES
+
   position: Point
   input: Input
   outputA: Output
@@ -521,6 +522,7 @@ export class Label extends BaseElement {
 
 
 export class Battery extends BaseElement {
+  static passThrough = PassThrough.NO
   static shape = new Box(0, 0, 4 * GRID_SIZE, 4 * GRID_SIZE)
 
   shape: Box
@@ -592,6 +594,7 @@ export class Battery extends BaseElement {
 }
 
 export class Ground extends BaseElement {
+  static passThrough = PassThrough.NO
   static shape = new Box(0, 0, 4 * GRID_SIZE, 4 * GRID_SIZE)
 
   shape: Box
@@ -635,6 +638,7 @@ export class Ground extends BaseElement {
 }
 
 export class BigTransistor extends BaseElement {
+  static passThrough = PassThrough.NO
   static shape = new Box(0, 0, 6 * GRID_SIZE, 6 * GRID_SIZE)
 
   shape: Box
@@ -685,6 +689,7 @@ export class BigTransistor extends BaseElement {
 }
 
 export class Light extends BaseElement {
+  static passThrough = PassThrough.NO
   static shape = new Box(0, 0, 4 * GRID_SIZE, 4 * GRID_SIZE)
 
   shape: Box
@@ -725,8 +730,8 @@ export class Light extends BaseElement {
 }
 
 export class Not extends BaseElement {
+  static passThrough = PassThrough.NO
   static shape = new Box(0, 0, 2 * GRID_SIZE, 4 * GRID_SIZE)
-  static size = 4 * GRID_SIZE
 
   shape: Box
   seed = newSeed()
@@ -804,15 +809,6 @@ export function vectorForEdge(b: BaseElement, edge: EdgeName) {
   return vector(b.shape.center, pointForBoxEdge(b.shape, edge)).normalize()
 }
 
-function boxAround(p: Point, size: number) {
-  return box(
-    p.x - size / 2,
-    p.y - size / 2,
-    p.x + size / 2,
-    p.y + size / 2,
-  )
-}
-
 export function snapToGrid(value: number) {
   return Math.round(value / GRID_SIZE) * GRID_SIZE
 }
@@ -845,3 +841,13 @@ function rotate(self: BaseElement, p: PlacementOptions, inputCenter?: Point) {
   }
 }
 
+function getWeight(distance: number) {
+  // More than double the cost at distance=1, to ensure the link does not go near the component
+  // unless absolutely required.
+  if (distance === 0) return 60
+  // Same logic as above
+  if (distance === 1) return 25
+  // The rest can be between 10-20. It doesn't cost more than 2 tiles to walk a tile. But we still
+  // prefer to avoid proximity.
+  return -3 * Math.log10(distance) + Math.E + 18
+}
