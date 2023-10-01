@@ -295,12 +295,7 @@ export class Circuit {
       const klass = child.constructor as typeof BaseElement
       const shape = child.shape
       if (klass.passThrough === PassThrough.NO) {
-        const bounds = new Box(
-          shape.xmin / GRID_SIZE,
-          shape.ymin / GRID_SIZE,
-          shape.xmax / GRID_SIZE,
-          shape.ymax / GRID_SIZE,
-        )
+        const bounds = shape.scale(1 / GRID_SIZE)
         polygons.push(new Polygon(bounds))
 
         for (let x = bounds.xmin; x < bounds.xmax; x++) {
