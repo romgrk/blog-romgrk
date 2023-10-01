@@ -3,6 +3,7 @@ import { Context, Circuit } from '../../circuit/drawing'
 import cx from './index.module.css'
 
 type CircuitOptions = {
+  width?: number,
   height?: number,
   options?: Partial<Circuit['options']>,
 }
@@ -27,7 +28,8 @@ export function createCircuit(options: CircuitOptions, fn: (ctx: Context, c: Cir
     <div>
       <svg
         className={cx.canvas}
-        width='100%'
+        style={{ width: options.width, height: options.height ?? 300 }}
+        width={options.width ? String(options.width) : '100%'}
         height={String(options.height ?? 300)}
         ref={ref}
       />
