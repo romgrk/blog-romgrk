@@ -4,11 +4,12 @@ description: ''
 pubDate: 'Sep 21 2023'
 ---
 
-import { DemoTransistor, DemoNotGate } from '../../components/client/posts/computers-from-scratch/index.tsx'
+import { DemoTransistor } from '../../components/client/posts/computers-from-scratch/transistor.tsx'
+import { DemoNotGate } from '../../components/client/posts/computers-from-scratch/logicGates.tsx'
 
 In this series, I'll be building a virtual real 16-bit computer from scratch, starting from the transistor and moving up the stack, going through logic gates, registers, ALU, RAM, caches (L1, L2, etc), MMU, assembly, basic compiled language and finally basic interpreted language. At the end of this, hopefully you should be "fullstack" for real!
 
-Now, when I say "virtual real" computer, I understand that can be confusing. What I mean is that we'll be using a simulation of transistors & electrical circuit, and we'll build our computer inside this simulation. This will also allow us (well you) to play with the actual circuits. All graphes here are **🌈 fully interactive 🌈**.
+Now, when I say "virtual real" computer, I understand that can be confusing. What I mean is that we'll be using a simulation of transistors & electrical circuits, and we'll build our computer inside this simulation. This will also allow us (well you) to play with the actual circuits. All graphes here are **🌈 fully interactive 🌈**.
 
 ## Transistors
 
@@ -19,5 +20,7 @@ The basic component of computers is the transistor. Everything is built from the
 This simple mechanism is what underlies all of computing, and from which we can build all the more complex behavior that we're about to see. Speaking of which, let's jump to the second level above transistors: logic gates.
 
 ## Logic gates
+
+Building logic gates with our transistors is about acquiring the building blocks required to perform boolean algebra, because boolean algebra is all we need to build the rest. The graphs in this section will be shown in two versions: the electrical one and the logical one. The electrical one shows how one such circuit can be built in real life, while the logical one shows the pure logic gate, unencumbered by electricity. This is the last step where we'll worry about electricity, all the subsequent ones will be based on the logic gates only.
 
 <DemoNotGate client:load />

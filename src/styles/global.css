@@ -188,6 +188,15 @@ img {
 .row > * {
   flex: 1;
 }
+.row > *:not(:last-child) {
+  margin-right: var(--gap, 0);
+}
+
+.gap-1 { --gap: 1rem; }
+.gap-2 { --gap: 2rem; }
+.gap-3 { --gap: 3rem; }
+.gap-4 { --gap: 4rem; }
+.gap-5 { --gap: 5rem; }
 
 .mb-1 {
   margin-bottom: 1rem;

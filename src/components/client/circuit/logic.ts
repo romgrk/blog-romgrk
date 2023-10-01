@@ -190,3 +190,23 @@ export class Transistor extends EventEmitter {
     this.output.set(this.input.enabled && this.control.enabled)
   }
 }
+
+export class Not extends EventEmitter {
+  input: Input
+  output: Output
+
+  constructor(input?: Input, output?: Output) {
+    super()
+
+    this.input = input ?? new Input()
+    this.output = output ?? new Output()
+
+    this.input.on('change', this.update)
+
+    this.update()
+  }
+
+  update = () => {
+    this.output.set(!this.input.enabled)
+  }
+}
