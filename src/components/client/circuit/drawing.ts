@@ -1,7 +1,6 @@
 import rough from 'roughjs'
 import EventEmitter from 'eventemitter3'
 import {
-  box,
   point,
   segment,
   vector,
@@ -334,8 +333,6 @@ export class Circuit {
   }
 }
 
-const EMPTY_BOX = new Box(0, 0, 0, 0)
-
 type PlacementOptions = {
   x: number,
   y: number,
@@ -344,10 +341,10 @@ type PlacementOptions = {
 
 abstract class BaseElement<T = {}> extends EventEmitter<CircuitEvents & T> {
   static passThrough = PassThrough.YES
-  static shape = EMPTY_BOX
+  static shape = Box.EMPTY
 
   seed = newSeed()
-  shape = EMPTY_BOX
+  shape = Box.EMPTY
   children = EMPTY_ARRAY as BaseElement<any>[]
   abstract draw(_: Context): SVGElement | null
 }
