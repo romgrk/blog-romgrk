@@ -1,18 +1,9 @@
 import {
   Battery,
-  Ground,
   Light,
   Junction,
-  Gate,
-  And,
-  Not,
   Nand,
-  BigTransistor,
-  snapToGrid,
-  LEFT,
-  RIGHT,
 } from '../../circuit/drawing'
-import * as electric from '../../circuit/electric'
 import { createCircuit } from './utils'
 
 
