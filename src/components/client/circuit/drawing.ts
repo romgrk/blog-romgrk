@@ -299,12 +299,13 @@ export class Circuit {
         const bounds = shape.scale(1 / GRID_SIZE).box
         obstacles.push(new Polygon(bounds))
 
-        for (let x = bounds.xmin; x < bounds.xmax; x++) {
-          for (let y = bounds.ymin; y < bounds.ymax; y++) {
+        for (let x = Math.floor(bounds.xmin); x < bounds.xmax; x++) {
+          for (let y = Math.floor(bounds.ymin); y < bounds.ymax; y++) {
             const index = y * width + x
             spaceData[index] = -1
 
-            if (Math.round(index) !== index) { throw new Error('Invalid dimensions') }
+            // FIXME: handle bounds properly
+            // if (Math.round(index) !== index) { throw new Error('Invalid dimensions') }
           }
         }
       }
@@ -347,14 +348,18 @@ abstract class BaseElement<T = {}> extends EventEmitter<CircuitEvents & T> {
   static passThrough = PassThrough.YES
   static shape: AnyShape = Box.EMPTY
 
-  seed = newSeed()
-  shape = Box.EMPTY as AnyShape
-  children = EMPTY_ARRAY as BaseElement<any>[]
+  seed: number
+  shape: AnyShape
+  orientation: Orientation
+  children: BaseElement<unknown>[]
   abstract draw(_: Context): SVGElement | null
 
   constructor(p: PlacementOptions) {
     super()
+    this.seed = newSeed()
     this.shape = 'shape' in this.constructor ? place(this.constructor as any, p) : Box.EMPTY
+    this.orientation = p.orientation ?? Orientation.TOP
+    this.children = EMPTY_ARRAY
   }
 
   get box() {
@@ -365,11 +370,7 @@ abstract class BaseElement<T = {}> extends EventEmitter<CircuitEvents & T> {
     if (p.orientation !== undefined) {
       const center = inputCenter ?? this.shape.box.center
 
-      if (this.shape instanceof Box) {
-        this.shape = new Polygon(this.shape).rotate(p.orientation, center).box.snapToGrid(GRID_SIZE)
-      } else {
-        throw new Error('unreachable')
-      }
+      this.shape = new Polygon(this.shape).rotate(p.orientation, center).box.snapToGrid(GRID_SIZE)
 
       const maybeP = this as any
       if (maybeP.position) {
@@ -588,7 +589,7 @@ export class Battery extends BaseElement {
     if (this.options.canToggle) {
       g.setAttribute('style', 'cursor: pointer')
       g.addEventListener('mousedown', this.toggle)
-      g.addEventListener('touchstart', this.toggle)
+      g.addEventListener('touchstart', this.toggle, { passive: true })
     }
 
     const color = this.output.enabled ? COLOR_ON : COLOR_OFF
@@ -793,16 +794,9 @@ export class Not extends BaseElement {
   }
 }
 
-export class And extends BaseElement {
+abstract class TwoInputsOneOutput extends BaseElement {
   static passThrough = PassThrough.NO
-  static shape = Path.fromPoints([
-    new Point(2 * GRID_SIZE, 0),
-    new Point(4 * GRID_SIZE, 2 * GRID_SIZE),
-    new Point(4 * GRID_SIZE, 4 * GRID_SIZE),
-    new Point(0, 4 * GRID_SIZE),
-    new Point(0, 2 * GRID_SIZE),
-    new Point(2 * GRID_SIZE, 0),
-  ])
+  static shape = Path.EMPTY
 
   inputA: Input
   inputB: Input
@@ -821,7 +815,7 @@ export class And extends BaseElement {
     this.inputB = new Input(pointForEdge(this, 'bottom').translate(+ 1 * GRID_SIZE, 0))
     this.output = new Output(pointForEdge(this, 'top'))
 
-    this.logic = new logic.And(
+    this.logic = new (this.constructor as any).logic(
       this.inputA.logic,
       this.inputB.logic,
       this.output.logic,
@@ -832,6 +826,7 @@ export class And extends BaseElement {
   }
 
   draw(c: Context) {
+    const klass = this.constructor as any
     const shape = this.shape as Path
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
@@ -840,10 +835,54 @@ export class And extends BaseElement {
       shape.toSVG(),
       { stroke: COLOR_EDGE, fill: COLOR_EDGE, seed: this.seed }
     ))
+    if (klass.text) {
+      g.appendChild(c.createText(
+        shape.center.x,
+        shape.center.y + 10,
+        klass.text,
+        { fontSize: 12, fontWeight: 'bold', textAnchor: 'middle' },
+      ))
+    }
 
     return g
   }
 }
+
+const HOUSE = Path.fromPoints([
+  new Point(2 * GRID_SIZE, 0),
+  new Point(4 * GRID_SIZE, 2 * GRID_SIZE),
+  new Point(4 * GRID_SIZE, 4 * GRID_SIZE),
+  new Point(0, 4 * GRID_SIZE),
+  new Point(0, 2 * GRID_SIZE),
+  new Point(2 * GRID_SIZE, 0),
+])
+
+export class And extends TwoInputsOneOutput {
+  static logic = logic.And
+  static text = 'AND'
+  static shape = HOUSE
+}
+
+export class Or extends TwoInputsOneOutput {
+  static logic = logic.Or
+  static text = 'OR'
+  static shape = HOUSE
+}
+
+export class Nand extends TwoInputsOneOutput {
+  static logic = logic.Nand
+  static text = 'NAND'
+  static shape = HOUSE
+}
+
+export class Nor extends TwoInputsOneOutput {
+  static logic = logic.Nor
+  static text = 'NOR'
+  static shape = HOUSE
+}
+
+
+export const Gate = { And, Or, Nand, Nor, }
 
 
 
@@ -882,9 +921,13 @@ export function snapToGrid(value: number) {
 }
 
 function place<T>(klass: { shape: Shape<T> }, p: PlacementOptions): T {
-  return klass.shape.translate(
-    p.x - klass.shape.box.width  / 2,
-    p.y - klass.shape.box.height / 2,
+  return placeShape(klass.shape, p)
+}
+
+function placeShape<T>(shape: Shape<T>, p: PlacementOptions): T {
+  return shape.translate(
+    p.x - shape.box.width  / 2,
+    p.y - shape.box.height / 2,
   )
 }
 
@@ -893,8 +936,9 @@ function getWeight(distance: number) {
   // unless absolutely required.
   if (distance === 0) return 60
   // Same logic as above
-  if (distance === 1) return 25
+  // if (distance === 1) return 25
+  return 10
   // The rest can be between 10-20. It doesn't cost more than 2 tiles to walk a tile. But we still
   // prefer to avoid proximity.
-  return -3 * Math.log10(distance) + Math.E + 18
+  // return -3 * Math.log10(distance) + Math.E + 18
 }

@@ -3,8 +3,10 @@ import {
   Ground,
   Light,
   Junction,
+  Gate,
   And,
   Not,
+  Nand,
   BigTransistor,
   snapToGrid,
   LEFT,
@@ -99,10 +101,7 @@ export function DemoAndGateElectric() {
 }
 
 export function DemoAndGateLogic() {
-  return createCircuit({}, (ctx, c) => {
-    const x = snapToGrid(ctx.dimensions.width / 2)
-    const y = snapToGrid(ctx.dimensions.height / 2)
-
+  return createCircuit({}, (ctx, c, x, y) => {
     const and     = c.add(new And({ x, y: y }))
     const led     = c.add(new Light({ x, y: y - 80 }))
     const inputA = c.add(new Battery({ x: x - 40, y: y + 80 }))
@@ -118,6 +117,36 @@ export function DemoAndGateLogic() {
   })
 }
 
+
+export function DemoAllGates() {
+  return (
+    <div className='row gap-1'>
+      <DemoNotGateLogic />
+      <DemoGateLogic logic={Gate.And} />
+      <DemoGateLogic logic={Gate.Or} />
+      <DemoGateLogic logic={Gate.Nand} />
+      <DemoGateLogic logic={Gate.Nor} />
+    </div>
+  )
+}
+
+export function DemoGateLogic({ logic }: { logic: typeof Gate[keyof typeof Gate] }) {
+  return createCircuit({}, (ctx, c, x, y) => {
+
+    const component = c.add(new logic({ x, y: y }))
+    const led       = c.add(new Light({ x, y: y - 80 }))
+    const inputA    = c.add(new Battery({ x: x - 40, y: y + 80 }))
+    const inputB    = c.add(new Battery({ x: x + 40, y: y + 80 }))
+
+    c.link(inputA.output, component.inputA, { find: true })
+    c.link(inputB.output, component.inputB, { find: true })
+    c.link(component.output, led.input, { find: true })
+
+    c.label(led, 'top', 'Output')
+    c.label(inputA, 'bottom', 'Input A')
+    c.label(inputB, 'bottom', 'Input B')
+  })
+}
 
 
 // export function DemoPath() {

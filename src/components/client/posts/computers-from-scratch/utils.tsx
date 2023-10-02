@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Context, Circuit } from '../../circuit/drawing'
+import { snapToGrid, Context, Circuit } from '../../circuit/drawing'
 import cx from './index.module.css'
 
 type CircuitOptions = {
@@ -8,14 +8,19 @@ type CircuitOptions = {
   options?: Partial<Circuit['options']>,
 }
 
-export function createCircuit(options: CircuitOptions, fn: (ctx: Context, c: Circuit) => void) {
+export function createCircuit(
+  options: CircuitOptions,
+  fn: (ctx: Context, c: Circuit, x: number, y: number) => void
+) {
   const ref = useRef<SVGSVGElement>(null)
 
   useEffect(() => {
     const c = new Context(ref.current!)
     const circuit = new Circuit(c, options.options)
+    const x = snapToGrid(c.dimensions.width  / 2)
+    const y = snapToGrid(c.dimensions.height / 2)
 
-    circuit.setup(() => fn(c, circuit))
+    circuit.setup(() => fn(c, circuit, x, y))
     circuit.start()
 
     return () => {

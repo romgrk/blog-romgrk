@@ -211,7 +211,7 @@ export class Not extends EventEmitter {
   }
 }
 
-export class And extends EventEmitter {
+abstract class TwoInputsOneOutput extends EventEmitter {
   inputA: Input
   inputB: Input
   output: Output
@@ -229,7 +229,39 @@ export class And extends EventEmitter {
     this.update()
   }
 
-  update = () => {
+  update = (): void => {
+    this.logic()
+  }
+
+  abstract logic(): void
+}
+
+export class And extends TwoInputsOneOutput {
+  logic() {
     this.output.set(this.inputA.enabled && this.inputB.enabled)
+  }
+}
+
+export class Or extends TwoInputsOneOutput {
+  logic() {
+    this.output.set(this.inputA.enabled || this.inputB.enabled)
+  }
+}
+
+export class Nand extends TwoInputsOneOutput {
+  logic() {
+    this.output.set(!(this.inputA.enabled && this.inputB.enabled))
+  }
+}
+
+export class Nor extends TwoInputsOneOutput {
+  logic() {
+    this.output.set(!(this.inputA.enabled || this.inputB.enabled))
+  }
+}
+
+export class Xor extends TwoInputsOneOutput {
+  logic() {
+    this.output.set(this.inputA.enabled !== this.inputB.enabled)
   }
 }
