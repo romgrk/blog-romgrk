@@ -3,6 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
+    "install": "cd ./src/components/client/circuit && pnpm install",
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
