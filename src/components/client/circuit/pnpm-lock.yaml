@@ -15,8 +15,8 @@ dependencies:
     specifier: ^8.4.0
     version: 8.4.0
   romgrk-2d-geometry:
-    specifier: ^0.1.0
-    version: link:../../../../../2d-geometry
+    specifier: 0.2.0
+    version: 0.2.0
   roughjs:
     specifier: ^4.6.3
     version: 4.6.3
@@ -85,6 +85,11 @@ packages:
 
   /rambda@8.4.0:
     resolution: {integrity: sha512-HSbOiyvCQgHKPcKO8Sknjj341vVUmetRwOh+4h0t/DVmAfQS3v3HMtWHtu3l2Awdxu9B4iJP2uAJTwp7eLB7zw==}
+    dev: false
+
+  /romgrk-2d-geometry@0.2.0:
+    resolution: {integrity: sha512-XCoyHYcO544iZeZNl3Je2PPYiPI0hMUHFNZg2ZQr1evnadl+THq3kHlTLpmZBy7tqRrNCZWZeMu85Zr1IZ8Z4A==}
+    engines: {node: '>=4.2.4'}
     dev: false
 
   /roughjs@4.6.3:
