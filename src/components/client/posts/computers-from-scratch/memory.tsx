@@ -8,16 +8,16 @@ import { createCircuit } from './utils'
 
 
 export function DemoSRNandLatch() {
-  return createCircuit({ options: { ticks: 40 } }, (ctx, c, x, y) => {
+  return createCircuit({ options: { ticks: 40 } }, (_, c, x, y) => {
 
     const nandA      = c.add(new Nand({ x: x - 50, y: y }))
     const nandB      = c.add(new Nand({ x: x + 50, y: y }))
     const inputSet   = c.add(new Battery({ x: x - 60, y: y + 80 }))
     const inputReset = c.add(new Battery({ x: x + 60, y: y + 80 }))
-    const junctionA = c.add(new Junction({ x: x - 50, y: y - 30 }))
-    const junctionB = c.add(new Junction({ x: x + 50, y: y - 30 }))
-    const outputA = c.add(new Light({ x: x - 50, y: y - 80 }))
-    const outputB = c.add(new Light({ x: x + 50, y: y - 80 }))
+    const junctionA  = c.add(new Junction({ x: x - 50, y: y - 30 }))
+    const junctionB  = c.add(new Junction({ x: x + 50, y: y - 30 }))
+    const outputA    = c.add(new Light({ x: x - 50, y: y - 80 }))
+    const outputB    = c.add(new Light({ x: x + 50, y: y - 80 }))
 
     c.link(inputSet.output, nandA.inputA)
     c.link(inputReset.output, nandB.inputB)

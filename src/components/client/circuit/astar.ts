@@ -142,6 +142,7 @@ export class Graph {
     this.nodes = []
     this.grid = []
     this.options = options
+    this.options.diagonal ??= true
     this.dirtyNodes = []
 
     for (let y = 0; y < height; y++) {
