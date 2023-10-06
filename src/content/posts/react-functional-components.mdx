@@ -9,7 +9,7 @@ import { ExampleStack, ExamplePerformance } from '../../components/client/posts/
 
 Over the last years, with the introduction of functional components and hooks, React has gradually been phasing out class components. Although I appreciate the introduction of functional components for their simplicity & conciseness, I think that <mark title="read the addendum">removing class components</mark> was the wrong decision.
 
-Before going further, let's establish one thing: closures and classes are two ways to look at the same thing: it's a pointer to a set of fields & methods. For classes, we call this pointer `this`. For closures, we call this pointer the lexical context or closure context. In theory, both constructs are interchangeable, so we should be free to use whichever one is more adapted to the situation at hand. In the following sections, I'll be arguing that *in some cases*, being able to use classes is more beneficial than using closures. Essentially, simple components are better written as closures, whereas complex components with more state are better written as classes.
+Before going further, let's establish one thing: closures and classes are two ways to look at the same thing: it's a pointer to a set of fields & methods. For classes, we call this pointer `this`. For closures, we call this pointer the closure context. In theory, both constructs are interchangeable, so we should be free to use whichever one is more adapted to the situation at hand. In the following sections, I'll be arguing that *in some cases*, being able to use classes is more beneficial than using closures. Essentially, simple components are better written as closures, whereas complex components with more state are better written as classes.
 
 Let's look at an example. Below we have equivalent drafts for a `Selector` component in functional and class versions.
 
@@ -75,11 +75,13 @@ function Selector(props) {
 
 ### Issue #1: Readability is worst
 
-Whereas the class version uses idiomatic standard javascript syntax, the functional one replicates the same structure by mashing every field, state and method into one huge giant function, where method declaration, field initialization and UI rendering intermingle into one ungodly mess. What tells me there isn't a `if (something) return <Haha />` in-between one of those fields or methods? Nothing. I need to scan everything to know where the rendering part really begins.
+Whereas the class version uses idiomatic standard javascript syntax, the functional one replicates the same structure by mashing every field, state and method into one big function, where method declaration, field initialization and UI rendering intermingle into one ungodly mess. Class syntax provides me language-backed guarantees that when I look at a method, be it `a()`, `b()` or `render()`, no control flow outside of the function can affect the control flow inside the function and no variable declared inside the function can be used anywhere else. There is a guaranteed encapsulation. I know where the `a` part is, I know where the `render` part is.
+
+For the functional version, all the state and temporary variables are stored in the same lexical context. If you're lucky, the component follows the same structure than it would if it was a class, and temporary variables are declared next to the function where they're used. If you're not, they're interspersed a bit everywhere. Some rendering done here. Oh and some more done after we've defined this new function. Oh. ho. o. !.
 
 And you need to wrap everything in `useState`, `useMemo` and `useCallback`. Every field. Every method. Everywhere.
 
-And then comes the problem of passing part of the internal state of the component around. Say you want do decouple part of the processing to functions in another file. How do you pass the internal state of the component around? For class components, that's trivial: pass `this`. For functional components, `this` is instead the closure context which is... a data structure accessible only to the JS engine :|
+And then comes the problem of passing part of the internal state of the component around. Say you want to decouple part of the processing to functions in another file. How do you pass the internal state of the component around? For class components, that's trivial: pass `this`. For functional components, `this` is instead the closure context which is... a data structure accessible only to the JS engine :|
 So what do you do? Either create bag-of-data objects from the state (essentially duplicating the closure context in memory): `externalFn({ open, loading, select })`. Or mash more functions into the big function.
 
 And the worst? I lied above. To be 100% equivalent you'd need to wrap with `forwardRef` and expose the methods with `useImperativeHandle`:
