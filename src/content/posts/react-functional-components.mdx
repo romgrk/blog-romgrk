@@ -9,6 +9,8 @@ import { ExampleStack, ExamplePerformance } from '../../components/client/posts/
 
 Over the last years, with the introduction of functional components and hooks, React has gradually been phasing out class components. Although I appreciate the introduction of functional components for their simplicity & conciseness, I think that <mark title="read the addendum">removing class components</mark> was the wrong decision.
 
+Before going further, let's establish one thing: closures and classes are two ways to look at the same thing: it's a pointer to a set of fields & methods. For classes, we call this pointer `this`. For closures, we call this pointer the lexical context or closure context. In theory, both constructs are interchangeable, so we should be free to use whichever one is more adapted to the situation at hand. In the following sections, I'll be arguing that *in some cases*, being able to use classes is more beneficial than using closures. Essentially, simple components are better written as closures, whereas complex components with more state are better written as classes.
+
 Let's look at an example. Below we have equivalent drafts for a `Selector` component in functional and class versions.
 
 <div class="row mb-1">
@@ -73,9 +75,12 @@ function Selector(props) {
 
 ### Issue #1: Readability is worst
 
-Whereas the class version uses idiomatic standard javascript syntax, the functional one replicates the **same code structure** by mashing every field, state and method into one huge giant function, where method declaration, field initialization and UI rendering intermingle into one ungodly mess. What tells me there isn't a `if (something) return <Haha />` in-between one of those fields or methods? Nothing. I need to scan everything to know where the rendering part really begins.
+Whereas the class version uses idiomatic standard javascript syntax, the functional one replicates the same structure by mashing every field, state and method into one huge giant function, where method declaration, field initialization and UI rendering intermingle into one ungodly mess. What tells me there isn't a `if (something) return <Haha />` in-between one of those fields or methods? Nothing. I need to scan everything to know where the rendering part really begins.
 
 And you need to wrap everything in `useState`, `useMemo` and `useCallback`. Every field. Every method. Everywhere.
+
+And then comes the problem of passing part of the internal state of the component around. Say you want do decouple part of the processing to functions in another file. How do you pass the internal state of the component around? For class components, that's trivial: pass `this`. For functional components, `this` is instead the closure context which is... a data structure accessible only to the JS engine :|
+So what do you do? Either create bag-of-data objects from the state (essentially duplicating the closure context in memory): `externalFn({ open, loading, select })`. Or mash more functions into the big function.
 
 And the worst? I lied above. To be 100% equivalent you'd need to wrap with `forwardRef` and expose the methods with `useImperativeHandle`:
 
@@ -133,13 +138,13 @@ Anyway let's test it with my poor man's implementation of react hooks. It's accu
 
 <ExamplePerformance client:load />
 
-Alright, I'll admit that the use-case (3000 components, render 5x) is a bit of a stretch, and that the impact for the large majority of applications is irrelevant. But in some cases, it does. You're running this on a fast computer, what would be the result on a low-end device? What happens when you do get to those stretching use-cases? Then you don't have a choice but to use the wasteful functional components.
+Alright, I'll admit that the benchmark here is a bit of a stretch, and that the impact for the large majority of applications is irrelevant. But in some cases, it does. You're running this on a <mark title="I'm guessing I have no idea">fast</mark> device, what would be the result on a low-end device? What happens when you do get to those stretching use-cases? Then you don't have a choice but to use the less performant functional components.
 
-Of course if you have a (real) functional component that is just a pure function `Component :: props -> UI` with no state & hooks, then for sure the functional one is faster. Functional components do have a place, they're excellent for simple use-cases. But there's more than just simple use-cases in life..
+Of course if you have a (real) functional component that is just a pure function `Component :: props -> UI` with no state & hooks, then for sure the functional one is faster. Functional components do have a place, they're excellent for simple use-cases. But there's more than just simple use-cases in life.
 
 ## Final notes
 
-I wish React would keep class components. I don't have much hope though. It seems like the maintainers in the last years are forcefully making it impossible to shoot yourself in the foot and make it so there is One Right Way to do things (see the removal of `componentWillReceiveProps`). Which makes sense, from their point of view. They're maintaining a library with a huge reach. They get all sort of reports from people with very varying levels of skill. So the biggest problem from their perspective is to ensure that most people are using the library correctly. And that means making things as simple as possible so those with less experience can use it correctly. They baby-proof it. The thing is, by doing so they make it harder to solve hard problems.
+I wish React would keep class components. But it seems like the maintainers in the last years are forcefully making it impossible to shoot yourself in the foot and make it so there is One Right Way to do things (see the removal of `componentWillReceiveProps`). Which makes sense, from their point of view. They're maintaining a library with a huge reach. They get all sort of reports from people with very varying levels of skill. So the biggest problem from their perspective is to ensure that most people are using the library correctly. And that means making things as simple as possible so those with less experience can use it correctly. They baby-proof it. The thing is, by doing so they make it harder to solve hard problems.
 
 <br/>
 <RandomPlant />

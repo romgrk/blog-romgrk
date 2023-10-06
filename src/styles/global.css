@@ -11,6 +11,7 @@
   --color-muted-fg:    #8d9298;
   --color-muted-2x-fg: #6A6E73;
 
+  --color-info-fg:  #599eff;
   --color-warning-fg:  #e6ad19;
 
   --color-footer-bg: #101010;
@@ -262,6 +263,18 @@ button.sm {
   border: 1px solid var(--color-border);
   border-radius: 4px;
   padding: 1rem;
+}
+
+.note {
+  border-radius: 6px;
+  padding: 1em 1em;
+}
+.note > * {
+  margin: 0;
+}
+.note--info {
+  border: 1px solid var(--color-info-fg);
+  background: color-mix(in srgb, var(--color-info-fg) 10%, transparent);
 }
 
 /*
