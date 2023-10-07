@@ -23,12 +23,17 @@ export class Circuit {
 
   static current = null as unknown as Circuit
 
-  links: Link[]
+  listeners: Set<BaseElement<any>>
   components: ReturnType<typeof getDefaultComponents>
 
   constructor() {
-    this.links = []
+    this.listeners = new Set()
     this.components = getDefaultComponents()
+  }
+
+  onTick(e: BaseElement<any>) {
+    this.listeners.add(e)
+    return () => this.listeners.delete(e)
   }
 }
 
@@ -44,7 +49,29 @@ type SinkEvent = {
   sink: () => void,
 }
 
-export class Input extends EventEmitter<ChangeEvent & SinkEvent> {
+abstract class BaseElement<T = {}> extends EventEmitter<UpdateEvent & T> {
+  private disposables: Function[] | null
+
+  constructor() {
+    super()
+    this.disposables = null
+  }
+
+  tick(_dt: number): void {}
+
+  defer(fn: Function) {
+    this.disposables ??= []
+    this.disposables.push(fn)
+  }
+
+  destroy() {
+    this.disposables?.forEach(fn => { fn() })
+    this.disposables = null
+  }
+}
+
+
+export class Input extends BaseElement<ChangeEvent & SinkEvent> {
   enabled: boolean
 
   constructor() {
@@ -59,7 +86,7 @@ export class Input extends EventEmitter<ChangeEvent & SinkEvent> {
   }
 }
 
-export class Output extends EventEmitter<ChangeEvent & SinkEvent> {
+export class Output extends BaseElement<ChangeEvent & SinkEvent> {
   enabled: boolean
 
   constructor() {
@@ -74,7 +101,7 @@ export class Output extends EventEmitter<ChangeEvent & SinkEvent> {
   }
 }
 
-export class Junction extends EventEmitter<UpdateEvent> {
+export class Junction extends BaseElement<UpdateEvent> {
   input: Input
   outputA: Output
   outputB: Output
@@ -104,7 +131,7 @@ export class Junction extends EventEmitter<UpdateEvent> {
   }
 }
 
-export class Link extends EventEmitter<UpdateEvent> {
+export class Link extends BaseElement<UpdateEvent> {
   output: Output
   input: Input
   length: number
@@ -122,7 +149,7 @@ export class Link extends EventEmitter<UpdateEvent> {
     this.output = output
     this.input = input
 
-    Circuit.current.links.push(this)
+    this.defer(Circuit.current.onTick(this))
   }
 
   resist(resistance: number) {
@@ -131,7 +158,7 @@ export class Link extends EventEmitter<UpdateEvent> {
     this.output.emit('sink')
   }
 
-  update(dt: number) {
+  tick(dt: number) {
     const isBeforeEmpty = this.streams.length === 0
     const isBeforeFull  = this.streams.length === 1 && this.streams[0][0] === 0 && this.streams[0][1] === this.length
 
@@ -168,7 +195,7 @@ export class Link extends EventEmitter<UpdateEvent> {
 }
 
 
-export class Transistor extends EventEmitter {
+export class Transistor extends BaseElement {
   input: Input
   output: Output
   control: Input
@@ -191,7 +218,7 @@ export class Transistor extends EventEmitter {
   }
 }
 
-export class Not extends EventEmitter {
+export class Not extends BaseElement {
   input: Input
   output: Output
 
@@ -211,10 +238,12 @@ export class Not extends EventEmitter {
   }
 }
 
-abstract class TwoInputsOneOutput extends EventEmitter {
+abstract class TwoInputsOneOutput extends BaseElement {
   inputA: Input
   inputB: Input
   output: Output
+  gateDelay: number
+  updateDelay: number
 
   constructor(inputA?: Input, inputB?: Input, output?: Output) {
     super()
@@ -222,46 +251,63 @@ abstract class TwoInputsOneOutput extends EventEmitter {
     this.inputA = inputA ?? new Input()
     this.inputB = inputB ?? new Input()
     this.output = output ?? new Output()
+    this.gateDelay = Math.round(Math.random() * 500)
+    this.updateDelay = -1
 
     this.inputA.on('change', this.update)
     this.inputB.on('change', this.update)
 
-    this.update()
+    this.defer(Circuit.current.onTick(this))
+
+    this.updateLogic()
+  }
+
+  tick(dt: number) {
+    if (this.updateDelay === -1)
+      return
+    const updateDelay = this.updateDelay - dt
+    if (updateDelay > 0) {
+      this.updateDelay = updateDelay
+    } else {
+      this.updateDelay = -1
+      this.updateLogic()
+    }
   }
 
   update = (): void => {
-    this.logic()
+    if (this.updateDelay === -1)
+      this.updateDelay = this.gateDelay
   }
 
-  abstract logic(): void
+  abstract updateLogic(): void
 }
 
 export class And extends TwoInputsOneOutput {
-  logic() {
+  updateLogic() {
     this.output.set(this.inputA.enabled && this.inputB.enabled)
   }
 }
 
 export class Or extends TwoInputsOneOutput {
-  logic() {
+  updateLogic() {
     this.output.set(this.inputA.enabled || this.inputB.enabled)
   }
 }
 
 export class Nand extends TwoInputsOneOutput {
-  logic() {
+  updateLogic() {
     this.output.set(!(this.inputA.enabled && this.inputB.enabled))
   }
 }
 
 export class Nor extends TwoInputsOneOutput {
-  logic() {
+  updateLogic() {
     this.output.set(!(this.inputA.enabled || this.inputB.enabled))
   }
 }
 
 export class Xor extends TwoInputsOneOutput {
-  logic() {
+  updateLogic() {
     this.output.set(this.inputA.enabled !== this.inputB.enabled)
   }
 }

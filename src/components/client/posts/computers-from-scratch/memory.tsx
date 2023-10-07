@@ -8,7 +8,7 @@ import { createCircuit } from './utils'
 
 
 export function DemoSRNandLatch() {
-  return createCircuit({ options: { ticks: 40 } }, (_, c, x, y) => {
+  return createCircuit({ options: { ticks: 2 } }, (_, c, x, y) => {
 
     const nandA      = c.add(new Nand({ x: x - 50, y: y }))
     const nandB      = c.add(new Nand({ x: x + 50, y: y }))
@@ -32,7 +32,6 @@ export function DemoSRNandLatch() {
 
     inputSet.output.set(true)
     inputReset.output.set(true)
-
   })
 }
 

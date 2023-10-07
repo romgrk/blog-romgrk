@@ -170,8 +170,8 @@ export class Circuit {
   }
 
   tick() {
-    this.logic.links.forEach(link => {
-      link.update(1)
+    this.logic.listeners.forEach(listener => {
+      listener.tick(1)
     })
   }
 
