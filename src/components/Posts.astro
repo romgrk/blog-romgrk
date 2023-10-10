@@ -5,6 +5,7 @@ import FormattedDate from './FormattedDate.astro';
 const posts = (await getCollection('posts'))
   .sort((a, b) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf())
   .filter(a => a.data.draft !== true)
+  .reverse()
 
 
 ---
