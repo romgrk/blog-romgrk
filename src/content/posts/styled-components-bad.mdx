@@ -110,7 +110,9 @@ function Component() {
 
 ## Final notes
 
-Please, stop doing this:
+Because I'm sure I'll get comments about it, I'm of course not arguing that you shouldn't encapsulate components if they form the base of your app's design language. If you need to define commmon elements that are "style-only" but that still represent a different logical block, say `Card` vs `Paragraph`, then sure go ahead. When you open a render function with `<Paragraph>...</Paragraph>` and `<Card>...</Card>`, you'll still know that nothing funky is going on because those become the common way to write `p` or `div` in your app and that's fine. It doesn't negates the fact that using styled-components everywhere is going to shit on the readability and reusability of your codebase. Styled components are a net negative in nearly all cases.
+
+So please, stop doing this:
 
 ```tsx
 export const Glorb = styled.div`
@@ -124,7 +126,6 @@ export const glorb = css`
 `
 ```
 
-Because I'm sure I'll get comments about it, I'm of course not arguing that you shouldn't encapsulate components if they form the base of your app's design language. If you need to define commmon elements that are "style-only" but that still represent a different logical block, say `Card` vs `Paragraph`, then sure go ahead. When you open a render function with `<Paragraph>...</Paragraph>` and `<Card>...</Card>`, you'll still know that nothing funky is going on because those become the common way to write `p` or `div` in your app and that's fine. It doesn't negates the fact that using styled-components everywhere is going to shit on the readability and reusability of your codebase. Styled components are a net negative in nearly all cases.
 
 <br/>
 <br/>
