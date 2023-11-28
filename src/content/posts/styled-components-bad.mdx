@@ -61,15 +61,9 @@ function Component() {
 }
 ```
 
-Sure, it's very slightly more verbose. On the other hand you know for a fact that all there is are divs here and nothing funky is going to happen. `glorb`, `obul` and `zirk` are classnames and you don't need to jump anywhere to figure that out. If you later need to add styling via props, you're already set up to `clsx` everything:
+Sure, it's very slightly more verbose. On the other hand you know for a fact that all there is here are divs and nothing funky is going to happen. `glorb`, `obul` and `zirk` are classnames and you don't need to jump anywhere to figure that out. If you later need to add styling via props, you're already set up to `clsx` everything:
 
 ```tsx
-/*
- * Note how everything style is defined at a single point.
- * No need to glance at the tag to figure out if it adds styling as well,
- * you just know instantly it's all in the className.
- * Simple, predictable, consistent.
- */
 function Component({ className }) {
   return (
     <div className={clsx(glorb, className)}>
@@ -77,9 +71,47 @@ function Component({ className }) {
     </div>
   )
 }
+/*
+ * Note how everything style is defined at a single point.
+ * No need to glance at the tag to figure out if it adds styling as well,
+ * you just know instantly it's all in the className.
+ * Simple, predictable, consistent.
+ */
 ```
 
-So please, stop doing this:
+### Reusability
+
+There's also the fact that styles gone into a styled components are not reusable. Say you want to reuse and combine the styles of `Glorb` and `Obul`. How you do?
+
+```tsx
+const Glorb = styled.div`color: red;`
+const Obul = styled.div`background-color: yellow;`
+function Component() {
+  return (
+    <Glorb,Obul /> // <!--- ??? :')
+  )
+}
+```
+
+If you wanted to make it work, you'd need to both define the styled components *and* expose the styles CSS string for others to re-use.
+
+Whereas if you have classNames `glorb` and `obul`, you again simply `clsx` and you're done. You can expose them & export them anywhere, and it works anywhere. Classes are native to the ecosystem and everyone understands them.
+
+```tsx
+const glorb = css`color: red;`
+const obul = css`background-color: yellow;`
+
+function Component() {
+  return (
+    <div className={clsx(glorb, obul)} />
+  )
+}
+```
+
+## Final notes
+
+Please, stop doing this:
+
 ```tsx
 export const Glorb = styled.div`
   border: 1px solid salmon;
@@ -91,6 +123,8 @@ export const glorb = css`
   border: 1px solid salmon;
 `
 ```
+
+Because I'm sure I'll get comments about it, I'm of course not arguing that you shouldn't encapsulate components if they form the base of your app's design language. If you need to define commmon elements that are "style-only" but that still represent a different logical block, say `Card` vs `Box`, then sure go ahead. When you open a render function with `<Box>...</Box>` and `<Card>...</Card>`, you'll still know that nothing funky is going on because those become the common way to write `div` or `section` in your app and that's fine. It doesn't negates the fact that using styled-components everywhere is going to shit on the readability and reusability of your codebase. Styled components are a net negative in nearly all cases.
 
 <br/>
 <br/>
