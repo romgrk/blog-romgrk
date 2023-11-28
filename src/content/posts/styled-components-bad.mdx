@@ -1,0 +1,99 @@
+---
+title: 'Why styled components are bad'
+description: 'romgrk ranting about styled components'
+pubDate: 'Nov 28 2023'
+---
+import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
+
+Let's say you open a file in an unknown project, or a project you worked on a long time ago (which is basically the same thing), and jump directly to the render method of a component that you need to work on. This is what you see:
+
+```jsx
+function Component() {
+  return (
+    <Glorb>
+      <Obul>
+        <Zirk />
+      </Obul>
+    </Glorb>
+  )
+}
+```
+
+Now, assume this project uses styled-components. What are `Glorb`, `Obul` and `Zirk`:
+ - Styled components that only add some styling?
+ - Real components that encapsulate logic & behavior?
+
+*There is no way to know!* It could very well be any of these possibilities:
+
+```tsx
+/* just some cute styling :) */
+export const Glorb = styled.div`
+  border: 1px solid salmon;
+`
+```
+
+```tsx
+export function Glorb({ children }) {
+  /* lots of logic */
+  useEffect(() => { /* ... */ }, [])
+  /* and funky stuff */
+  return (
+    React.Children.map(children, child => /* ... */)
+  )
+}
+```
+
+The only solution left at this point for you poor dev is to jump to the definition of each of those components to try to make sense if any of them does something funky, before you work further on whatever you need to fix. Having guarantees that the code you look at doesn't do funky stuff is a huge help in navigating a codebase.
+
+Besides, the JSX tag name is not a natural place to encode styling. The tag name for elements has always been for the logic & behavior it encodes, be it a `div`, `button`, `input` or even custom ones like `Combobox` or `DatePicker`. You're going to be able to tell from the name right away what behavior it encapsulates. So what is the best place to encode styling, you ask me? The same place that we've been using for decades: `class(Name)` and `style`.
+
+Now imagine again you come in an unknown project and you look at this:
+
+```tsx
+function Component() {
+  return (
+    <div className={glorb}>
+      <div className={obul}>
+        <div className={zirk} />
+      </div>
+    </div>
+  )
+}
+```
+
+Sure, it's very slightly more verbose. On the other hand you know for a fact that all there is are divs here and nothing funky is going to happen. `glorb`, `obul` and `zirk` are classnames and you don't need to jump anywhere to figure that out. If you later need to add styling via props, you're already set up to `clsx` everything:
+
+```tsx
+/*
+ * Note how everything style is defined at a single point.
+ * No need to glance at the tag to figure out if it adds styling as well,
+ * you just know instantly it's all in the className.
+ * Simple, predictable, consistent.
+ */
+function Component({ className }) {
+  return (
+    <div className={clsx(glorb, className)}>
+      { /* etc */ }
+    </div>
+  )
+}
+```
+
+So please, stop doing this:
+```tsx
+export const Glorb = styled.div`
+  border: 1px solid salmon;
+`
+```
+and start doing this:
+```tsx
+export const glorb = css`
+  border: 1px solid salmon;
+`
+```
+
+<br/>
+<br/>
+<RandomPlant />
+<br/>
+<br/>
