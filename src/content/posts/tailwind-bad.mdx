@@ -9,9 +9,9 @@ So unlike styled-components, there's actually quite a few things that I apprecia
 
 ## Why it's good
 
-Tailwind is an amazing at one thing, and that is at being a *design framework*. You see, when an expert CSS designer starts a project, they will always establish a set of primitives from which to build their design. Those are a spacing unit, a color palette, shades for each color, and a set of component sizes, minimally. This is partly why CSS preprocessors were invented, because they allow us to give semantic names to CSS values.
+Tailwind is an amazing at one thing, and that is at being a *design framework*. You see, when an expert CSS designer starts a project, they will always establish a set of primitives from which to build their design. Those are a spacing unit, a color palette, shades for each color, and a set of component sizes, minimally.
 
-The problem with this approach has always been that most developers are not expert CSS designers; they're average CSS designers who are tasked to translate mockups into code, or sometimes even just design stuff themselves. So lacking this experience, we skip the whole CSS base design system phase and jump to coding. And that's why we end up seeing `color: #e07b7b` (and 10 different other shades) instead of `color: $danger-600`. It's because most devs don't have the experience or time to do CSS from scratch properly.
+The problem with this approach has always been that most developers are not expert CSS designers; they're average CSS designers who are tasked to translate mockups into code, when it's not just designing stuff themselves. So lacking this experience, we skip the whole CSS base design system phase and jump to coding. And that's why we end up seeing `color: #e07b7b` (and 10 different other shades) instead of `color: $danger-600`. It's because most devs don't have the experience or time to do CSS from scratch properly.
 
 And that's where tailwind comes in. As I said, it's an amazing design framework and being able to ensure that all the juniors are going to produce somewhat consistent styling with low supervision is a huge benefit. Every app should have a design framework, even if it doesn't have tailwind.
 
@@ -82,7 +82,7 @@ I made the mistake of purchasing TailwindUI for a new project some time ago. The
 
 And that's also what you get everytime you open your devtools. Your DOM tree is nothing but a downpour of tailwind classes that overflow the already cramped panel. If I open my DOM tree, I want to see that this div is a `card__title` or a `list__item`. Seeing a `[insert stream of tailwind classes]` does nothing to tell me what kind of element I have in front of my eyes, be it in the devtools or in the source code. DX isn't about what feels best to write fast, DX is about what gives the best experience over the whole period during which the code needs to be read, debugged & updated.
 
-The other failing of tailwind is that, if used as intended by its creator, the styles aren't shared. If I want to build a "button" style, there is no obvious recommended way to build it from say `bg-blue-500 text-white font-semibold active:bg-blue-400` and share it across many locations. So what ends up happening is tons of duplication. And if you want to update button-like styles? You hunt down all those duplications and update them one by one.
+The other failing of tailwind is that, if used as intended by its creator, the styles aren't shared. If I want to build a "button" style, there is no obvious recommended way to build it from say `bg-blue-500 text-white font-semibold active:bg-blue-400` and share it across many locations. So what ends up happening is tons of duplication. Wanna update button-like styles? Go hunt down all those duplicates and update them one by one.
 
 Being able to give good semantic names is one of the most important aspects of programming. As a wise stackoverflow user once said, *"the process of naming makes you face the horrible fact that you have no idea what the hell you're doing"*.
 
@@ -90,7 +90,7 @@ Being able to give good semantic names is one of the most important aspects of p
 
 So if we recap why tailwind is bad:
 
- - It makes it hard to read the HTML structure
+ - It makes it hard to read the element tree
  - It makes it hard to update styles
  - It doesn't recommend a way to share styles
 
@@ -116,7 +116,7 @@ Into something like this:
 
 This here is simple, readable & reusable code.
 
-The problem with tailwind classes is they are the next step above inline CSS styles. They're a good design language, but they're not enough to build a design system. If you're building a design system, you want good semantic names. If I add the style `bg-blue-500` on my button, I want to be able to tweak that color later. The actual color name I really want is something like `bg-primary-500` or `bg-info-500`, because it provides a semantic value and can be tweaked separately when the designer suddenly decides that our primary color now *needs* to be flashy pink because all his friends are using it (or maybe because they're all *not* using it).
+The problem with tailwind classes is they are the next step right above inline CSS styles. They're a good design language, but they're not enough to build a design system. If you're building a design system, you want good semantic names. If I add the style `bg-blue-500` on my button, I want to be able to tweak that color later. The actual color name I will want when it's time to update the styles is something like `bg-primary-500` or `bg-info-500`, because it provides a semantic value and can be tweaked separately when the designer suddenly decides that our primary color now *needs* to be flashy pink because all his friends are using it (or maybe because they're all *not* using it).
 
 The other acceptable way to use tailwind that I've found is to use it with regular CSS, update the tailwind config to get semantic color names, and use `@apply`:
 
@@ -135,7 +135,7 @@ The other acceptable way to use tailwind that I've found is to use it with regul
 
 You still get simple, readable & reusable code.
 
-*"But what if I need to add a margin to some buttons, won't I need to create tons of variants for each and every element?"*
+*"But what if I need to add a margin to some buttons, won't I need to create tons of modifiers for each and every element?"*
 
 Well no. You see the goal is always to have readable & reusable code. If the best way to reach that goal is to use an occasional tailwind class here and there, you just use it:
 
