@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;700&display=swap');
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --color-body-fg:  #dce4f1;
   --color-body-bg:  #262626;
@@ -304,6 +308,14 @@ article mark {
   background-color: transparent;
   border-bottom: 1px dashed var(--color-muted-fg);
 }
+article ul {
+  margin-bottom: 2rem;
+}
+article ul li {
+  padding-left: 1rem;
+  margin-bottom: 0.5rem;
+  list-style: inside;
+}
 
 
 code {
@@ -316,6 +328,7 @@ code {
 
 .astro-code {
   padding: 1rem;
+  margin-bottom: 2rem;
 
   font-size: 1rem;
   line-height: 1.5;

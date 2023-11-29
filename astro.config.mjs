@@ -2,13 +2,21 @@ import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import react from "@astrojs/react";
-
 import netlify from "@astrojs/netlify/functions";
+
+import tailwind from "@astrojs/tailwind";
 
 // https://astro.build/config
 export default defineConfig({
   site: 'https://romgrk.com',
-  integrations: [mdx(), sitemap(), react()],
+  integrations: [
+    mdx(),
+    sitemap(),
+    react(),
+    tailwind({
+      applyBaseStyles: false,
+    })
+  ],
   markdown: {
     shikiConfig: {
       // Choose from Shiki's built-in themes (or add your own)
