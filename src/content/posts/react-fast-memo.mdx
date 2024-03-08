@@ -190,7 +190,9 @@ I have compared 2 implementations, one where we don't include the ⚠️  assump
 ```
 
 <sup>1</sup> Alright ok but we do need to admit that we've optimized for "react props", not for general correctness. We
-return `true` for `equals({ a: undefined }, {})`, which works for us but not for a generic compare function.
+return `true` for `equals({ a: undefined }, {})`, which works for us but not for a generic compare function. We do have
+`fastCompare` which is still the fastest and 1.5x faster than react if we only consider candidates that use safe
+assumptions. `hughsk/shallow-equals` is discarded due to its `===` use.
 
 <sup>2</sup> Alright and yes, I have excluded one package that was faster from this list. In my defense, it was [shallow-equal-jit](https://www.npmjs.com/package/shallow-equal-jit),
 which requires you to pass the object keys beforehand and only works if the keys stay the same, which does not work for
