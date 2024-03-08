@@ -1,10 +1,32 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
-import react from "@astrojs/react";
-import netlify from "@astrojs/netlify/functions";
+import react from '@astrojs/react';
+import netlify from '@astrojs/netlify/functions';
+import tailwind from '@astrojs/tailwind';
+import rehypePrettyCode from 'rehype-pretty-code';
 
-import tailwind from "@astrojs/tailwind";
+const prettyCodeOptions = {
+  theme: 'github-dark-dimmed',
+  onVisitLine(node) {
+    if (node.children.length === 0) {
+      node.children = [
+        {
+          type: 'text',
+          value: ' ',
+        },
+      ];
+    }
+  },
+  onVisitHighlightedLine(node) {
+    node.properties.className ??= []
+    node.properties.className.push('code-highlighted-line');
+  },
+  onVisitHighlightedWord(node) {
+    node.properties.className = ['code-highlighted-word'];
+  },
+  tokensMap: {},
+};
 
 // https://astro.build/config
 export default defineConfig({
@@ -28,8 +50,11 @@ export default defineConfig({
       langs: [],
       // Enable word wrap to prevent horizontal scrolling
       wrap: true
-    }
+    },
+    extendDefaultPlugins: true,
+    syntaxHighlight: false,
+    rehypePlugins: [[rehypePrettyCode, prettyCodeOptions]],
   },
-  output: "server",
+  output: 'server',
   adapter: netlify()
 });

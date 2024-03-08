@@ -7,7 +7,9 @@
 :root {
   --color-body-fg:  #dce4f1;
   --color-body-bg:  #262626;
+
   --color-panel-bg: #212121;
+
   --color-embed-fg: #edf2fb;
   --color-embed-bg: #383838;
   --color-embed-border: #454545;
@@ -309,12 +311,13 @@ article mark {
   border-bottom: 1px dashed var(--color-muted-fg);
 }
 article ul {
+  margin-left: 1rem;
   margin-bottom: 2rem;
 }
 article ul li {
   padding-left: 1rem;
-  margin-bottom: 0.5rem;
-  list-style: inside;
+  margin-bottom: 0.5em;
+  list-style: outside;
 }
 
 
@@ -326,8 +329,10 @@ code {
   font-size: 1.05rem;
 }
 
-.astro-code {
-  padding: 1rem;
+.astro-code,
+figure > pre {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
   margin-bottom: 2rem;
 
   font-size: 1rem;
@@ -337,8 +342,17 @@ code {
   border: 1px solid var(--color-border);
   background-color: var(--color-panel-bg) !important;
 }
-.astro-code > code {
+.astro-code > code,
+figure > pre > code {
   all: unset;
+}
+[data-line] {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+.code-highlighted-line,
+.code-highlighted-word {
+  background-color: #c8c8ff1a;
 }
 
 blockquote {
