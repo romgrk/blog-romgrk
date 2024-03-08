@@ -88,7 +88,7 @@ I have marked with ⚠️  the assumptions that are unsafe and would lead to an 
 and we'll come back to these later. With that in mind, here is the implementation I landed on:
 
 ```javascript
-export function fastCompareForReactProps(a, b) {
+export function fastCompareUnsafe(a, b) {
   let aLength = 0;
   let bLength = 0;
 
@@ -146,6 +146,43 @@ were able to remove the `Object.hasOwnProperty()` call that React has:
 I'll note that V8 and JavaScriptCore are able to optimize away the `hasOwnProperty` call, but SpiderMonkey can't (yet),
 so this optimization is Firefox specific.
 
+## Safe version
+
+Some of the assumptions we made above are unsafe however, in particular if you use the pattern `'key' in props` in your
+codebase. So here is also the function without the unsafe assumptions, where we have added back the prelude and the check
+for the same keys including `undefined` ones:
+
+```javascript {2-7} {18-20}
+export function fastCompare(a, b) {
+  if (a === b) {
+    return true;
+  }
+  if (!(a instanceof Object) || !(b instanceof Object)) {
+    return false;
+  }
+
+  let aLength = 0;
+  let bLength = 0;
+
+  for (const key in a) {
+    aLength += 1;
+
+    if (!Object.is(a[key], b[key])) {
+      return false;
+    }
+    if (!(key in b)) {
+      return false;
+    }
+  }
+
+  for (const _ in b) {
+    bLength += 1;
+  }
+
+  return aLength === bLength;
+}
+```
+
 
 ## How fast are we?
 
@@ -184,8 +221,8 @@ I have compared 2 implementations, one where we don't include the ⚠️  assump
   //   false for `NaN === NaN`
 
   // Does include ⚠️ assumptions
-  "romgrk-fastCompareForReactProps:equal":   { t: 515,     stddev: 7.48 },
-  "romgrk-fastCompareForReactProps:unequal": { t: 445.33,  stddev: 1.24 },
+  "romgrk-fastCompareUnsafe:equal":          { t: 515,     stddev: 7.48 },
+  "romgrk-fastCompareUnsafe:unequal":        { t: 445.33,  stddev: 1.24 },
 }
 ```
 
@@ -203,6 +240,11 @@ react props. We can assume the keys are *likely* to be the same, but we can't as
 So anyway, if you're not doing anything funky with your React props and are really way too interested in making your app
 performant, you can [checkout the repo](https://github.com/romgrk/react-fast-memo)
 or `pnpm install react-fast-memo`.
+
+The unsafe version might seem unuseful, but it has certain niche use-cases: if you're comparing objects that you can 100%
+guarante have the same shape, then that one should be your pick.
+
+One big asterisk though: on JavaScriptCore, the unsafe version is slower! Up-to-date benchmarks [here](https://github.com/romgrk/react-fast-memo?tab=readme-ov-file#benchmarks).
 
 <br />
 <br />
