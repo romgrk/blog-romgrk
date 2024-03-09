@@ -210,7 +210,7 @@ I have compared 2 implementations, one where we don't include the ⚠️  assump
   // ^ this one is surprisingly fast, but only for the "unequal objects"
   //   case which is the unlikely one, so we're not really interested in it.
 
-  // Does not include ⚠️ assumptions
+  // Safe: does not include assumptions
   "romgrk-fastCompare:equal":                { t: 871.67,  stddev: 11.58 },
   "romgrk-fastCompare:unequal":              { t: 777,     stddev: 8.83 },
 
@@ -220,15 +220,16 @@ I have compared 2 implementations, one where we don't include the ⚠️  assump
   //   `===` for comparison instead of `Object.is`, which always returns
   //   false for `NaN === NaN`
 
-  // Does include ⚠️ assumptions
+  // Unsafe: includes ⚠️ assumptions
   "romgrk-fastCompareUnsafe:equal":          { t: 515,     stddev: 7.48 },
   "romgrk-fastCompareUnsafe:unequal":        { t: 445.33,  stddev: 1.24 },
 }
 ```
 
 <sup>1</sup> Alright ok but we do need to admit that we've optimized for "react props", not for general correctness. We
-return `true` for `equals({ a: undefined }, {})`, which works for us but not for a generic compare function. We do have
-`fastCompare` which is still the fastest and 1.5x faster than react if we only consider candidates that use safe
+return `true` for `equals({ a: 1, b: undefined }, { a: 1, c: undefined })`, which works for us but not for a generic compare
+function. <br />
+We do have `fastCompare` which is still the fastest and 1.5x faster than react if we only consider candidates that use safe
 assumptions. `hughsk/shallow-equals` is discarded due to its `===` use.
 
 <sup>2</sup> Alright and yes, I have excluded one package that was faster from this list. In my defense, it was [shallow-equal-jit](https://www.npmjs.com/package/shallow-equal-jit),
