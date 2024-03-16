@@ -1,0 +1,276 @@
+---
+title: 'Optimizing Javascript for fun and for profit'
+description: ''
+pubDate: 'Mar 15 2024'
+---
+import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
+import { Benchmark } from './optimizing-react-and-javascript.tsx'
+
+
+I often feel like javascript code in general runs much slower than it could, simply because it's not optimized properly. Here is a summary of common optimization techniques. The tradeoff for performance is of course readability in most cases, so the question of when to go for performance vs readability is an exercise left to the reader. I'll also note that talking about optimization necessarily requires talking about benchmarking. Micro-optimizing a function for hours to have it run 100x faster is meaningless if the function only represented 0.1% of the actual overall runtime to start with. If one is optimizing a codebase, the first and most important step is benchmarking. I'll cover the topic in the later points.
+
+I've included runnable examples for all points where it applies. They show by default the results I got on my machine (running brave v122 on archlinux) but you can run them yourself. As much as I hate to say it, Firefox/SpiderMonkey has fallen a bit behind in the optimization game, and represents a very small fraction of the traffic, so I don't recommend using the results you'd get on Firefox as useful indicators.
+
+### 0. Avoid work
+
+This might sound evident, but the first optimization I always try to go for is avoid work that can be avoided.
+
+### 1. Avoid string comparisons, prefer integers
+
+Javascript makes it easy to hides the real cost of string comparisons. If you need to compare strings in C, you'd use `strcmp(a, b)`, versus `a == b` for integers. Javascript uses
+`===` for both, so you don't see the `strcmp`. But it's there. Lurking. Bigger string also means longer compare, string comparison is `O(n)`. One common javascript pattern to avoid is strings-as-enums. But with the advent of typescript this should be easily avoidable, as
+enums are integers by default.
+
+<div class="row">
+
+```typescript
+// No
+enum Position {
+  TOP = 'TOP',
+  BOTTOM = 'BOTTOM',
+}
+```
+
+```typescript
+// Yes
+enum Position {
+  TOP,
+  BOTTOM,
+}
+```
+
+</div>
+
+Here is a comparison of the costs:
+
+<div id="benchmark-compare" class="row">
+
+```javascript
+// 1. string compare
+const Position = {
+  TOP: 'TOP',
+  BOTTOM: 'BOTTOM',
+}
+
+let result = 0
+for (let i = 0; i < 1000000; i++) {
+  let current = i % 2 === 0 ?
+    Position.TOP : Position.BOTTOM
+  if (current === Position.TOP)
+    result += 1
+}
+```
+
+```javascript
+// 2. int compare
+const Position = {
+  TOP: 0,
+  BOTTOM: 1,
+}
+
+let result = 0
+for (let i = 0; i < 1000000; i++) {
+  let current = i % 2 === 0 ?
+    Position.TOP : Position.BOTTOM
+  if (current === Position.TOP)
+    result += 1
+}
+```
+
+</div>
+
+<Benchmark
+  id="benchmark-compare"
+  results={{"1. string compare":{"runTime":-1000,"amountOfRounds":828,"percent":50.35},"2. int compare":{"runTime":-1000,"amountOfRounds":2137,"percent":100}}}
+  client:load
+/>
+
+As you can see, the difference can be significant. The difference isn't just due to the amount of comparisons needed, but also because integers are usually passed by value in JS engines, whereas strings are always passed as a pointer. For example, V8 represents integers as compact [Smi](https://medium.com/fhinkel/v8-internals-how-small-is-a-small-integer-e0badc18b6da) values, and JSC uses [double tagging](https://ktln2.org/2020/08/25/javascriptcore/) to the same effect, as SpiderMonkey does.
+
+In string heavy code, this can have a huge impact. For example, I was able to [make this JSON5 javascript parser run 2x faster](https://github.com/json5/json5/pull/278) just by replacing strings by numbers.
+
+### 2. Avoid different shapes
+
+Javascript engines try to optimize their code by assuming that javascript objects have a specific shape, and that functions will receive objects of the same shape. For example, at runtime if the following function receives two objects with the shape `{ x: number, y: number }`, engines are going to emit fast code that expects objects with that shape.
+
+```javascript
+function add(a, b) {
+  return { x: a.x + b.x, y: a.y + b.y}
+}
+```
+
+If one would instead pass an object not with the shape `{ x, y }` but with the shape `{ y, x }`, the engine would need to undo its optimization and the function would suddenly become considerably slower. I'm going to limit my explanation here because you should read  the excellent [post from mraleph](https://mrale.ph/blog/2015/01/11/whats-up-with-monomorphism.html) if you want more details, but I'm going to highlight that V8 in particular has 3 modes, for functions that are: monomorphic (1 shape), polymorphic (2-4 shapes), and megamorphic (5+ shapes). Let's say you *really* want to stay monomorphic, because the slowdown is drastic:
+
+<div id="benchmark-shape" class="code-blocks">
+
+```javascript
+// 1. monomorphic
+const o1 = { a: 1, b: 2, c: 3, d: 4, e: 5 } // all the same shape
+const o2 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
+const o3 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
+const o4 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
+const o5 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
+```
+
+```javascript
+// 2. polymorphic
+const o1 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
+const o2 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
+const o3 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
+const o4 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
+const o5 = { b: 2, a: 1, c: 3, d: 4, e: 5 } // "a" and "b" reversed
+```
+
+```javascript
+// 3. megamorphic
+const o1 = { a: 1, b: 2, c: 3, d: 4, e: 5 } // "a" in 1st key
+const o2 = { b: 2, a: 1, c: 3, d: 4, e: 5 } // "a" in 2nd key
+const o3 = { b: 2, c: 3, a: 1, d: 4, e: 5 } // "a" in 3rd key
+const o4 = { b: 2, c: 3, d: 4, a: 1, e: 5 } // "a" in 4th key
+const o5 = { b: 2, c: 3, d: 4, e: 5, a: 1 } // "a" in 5th key
+```
+
+```javascript
+// test case
+function add(a1, b1) {
+  return a1.a + a1.b + a1.c + a1.d + a1.e +
+         b1.a + b1.b + b1.c + b1.d + b1.e }
+
+let result = 0
+for (let i = 0; i < 1000000; i++) {
+  result += add(o1, o2)
+  result += add(o3, o4)
+  result += add(o4, o5)
+}
+```
+
+</div>
+
+<Benchmark
+  id="benchmark-shape"
+  results={{"1. monomorphic":{"runTime":-1000,"amountOfRounds":1247,"percent":100},"2. polymorphic":{"runTime":-1003,"amountOfRounds":163,"percent":13.07},"3. megamorphic":{"runTime":-1008,"amountOfRounds":51,"percent":4.09}}}
+  client:load
+/>
+
+### 3. Avoid allocations
+
+Memory allocations are also a good target for optimizations. Once again, javascript makes certain patterns very easy, which hides their cost. For example, all the following lines generate an allocation:
+
+```javascript
+// +1 allocation: 'numbers'
+const numbers = [1, 2, 3]
+
+// +1 allocation: 'point'
+const point = { x: 1, y: 2, z: 3 }
+
+// +1 allocation: 'other'
+const { x, ...rest } = point
+
+// +1 allocation: anonymous object, even if only the 1st one is used
+const ref = useRef({ x: 0, y: 0, z: 0 })
+
+// +3 allocations!: `.values()`, `.map()`, `.filter()`
+const result =
+  Object.values(point)
+    .map(n => n * 2)
+    .filter(n => n % 2 === 0)
+    .reduce((a, n) => a + n, 0)
+```
+
+The problem with memory allocations is that
+
+  1. RAM memory accesses are less cheap than you think and
+  2. you need to pay Garbage Collection costs for each one of those.
+
+In general, in performance sensitive code, try to avoid any javascript function that returns a complex object such as an object or an array. Let's see an example with this function that creates a clone of an object, minus the `excluded` keys:
+
+<div id="benchmark-memory" class="code-blocks">
+
+
+```javascript
+// 1. Object.keys()
+function cloneWithoutKeys(object, excluded) {
+  const result = {}
+  const keys = Object.keys(object)
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i]
+    if (excluded.indexOf(key) >= 0) continue
+    result[key] = object[key]
+  }
+  return result;
+}
+```
+
+```javascript
+// 2. No allocations
+function cloneWithoutKeys(object, excluded) {
+  const result = {}
+  for (const key in object) {
+    if (object.hasOwnProperty(key)) {
+      if (excluded.indexOf(key) >= 0) continue
+      result[key] = object[key]
+    }
+  }
+  return result;
+}
+```
+
+```javascript
+// test case
+const object = { a: 1, b: 2, c: 3, d: 4, e: 5 }
+const excluded = ['d', 'e']
+for (let i = 0; i < 1000000; i++) {
+  const result = cloneWithoutKeys(object, excluded)
+}
+```
+
+</div>
+
+<Benchmark
+  id="benchmark-memory"
+  results={{"1. Object.keys()":{"runTime":-1023,"amountOfRounds":15,"percent":75},"2. No allocations":{"runTime":-1035,"amountOfRounds":20,"percent":100}}}
+  client:load
+/>
+
+For the same logic, we were able to save 25% of the cost simply be avoiding `Object.keys()`. This function by the way is what [babel desugars object destructuring into](https://github.com/babel/babel/pull/16357)! So if you destructured an object with 100 keys, not only were you making a copy of that object, but you were also allocating an array of a 100 keys. Hopefully it should be resolved by the time you read this.
+
+I'll note that avoidiing allocations by using imperative code is the place where the performance vs readability tradeoff is the most apparent, so using imperative code to replace something as readable as this example below, requires consideration.
+
+```javascript
+const result =
+  Object.values(point)
+    .map(n => n * 2)
+    .filter(n => n % 2 === 0)
+    .reduce((a, n) => a + n, 0)
+
+// I'm not even going to translate it to imperative code, it would ruin
+// the beauty.
+```
+
+
+0. Avoid indirection
+0. Avoid map/filter/reduce
+0. Cache locality
+0. Use proper data structures
+0. Use profiler (chrome + firefox)
+0. Use style invalidation inspector
+0. Use eval
+
+0. Avoid work
+0. Avoid string comparisons, prefer ints
+0. Avoid different shapes
+0. Avoid allocations
+0. Avoid indirection
+0. Avoid map/filter/reduce
+0. Cache locality
+0. Use proper data structures
+0. Use profiler (chrome + firefox)
+0. Use style invalidation inspector
+0. Use eval
+
+
+<br />
+<br />
+<RandomPlant />
+<br />
+<br />

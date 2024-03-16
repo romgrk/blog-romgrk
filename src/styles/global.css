@@ -320,6 +320,18 @@ article ul li {
   list-style: outside;
 }
 
+article ol {
+  padding-left: 2rem;
+  margin-bottom: 2rem;
+}
+article ol li {
+  padding-left: 1rem;
+  margin-bottom: 0.0em;
+  list-style: decimal;
+}
+article ol li p {
+  /* margin: 0; */
+}
 
 code {
   padding: 0.10rem 0.35rem;
@@ -353,6 +365,13 @@ figure > pre > code {
 .code-highlighted-line,
 .code-highlighted-word {
   background-color: #c8c8ff1a;
+}
+
+.code-blocks pre {
+  margin-bottom: 0;
+}
+.code-blocks {
+  padding-bottom: 1rem;
 }
 
 blockquote {
