@@ -26,6 +26,7 @@ type Results = Record<string, Result>
 
 export function Benchmark({ id, results }: { id: string, results?: Results }) {
   const testCase = useRef('')
+  const setup = useRef('')
   const [isRunning, setRunning] = useState(false)
   const [progress, setProgress] = useState(-1)
   const [blocks, setBlocks] = useState(() => {
@@ -34,14 +35,19 @@ export function Benchmark({ id, results }: { id: string, results?: Results }) {
     Array.from(document.querySelectorAll(`#${id} pre > code`)).forEach((block, index) => {
       const code = block.textContent!.trim()
       const id = code.startsWith('//') ? code.slice(2).split('\n')[0].trim() : `Case ${index + 1}`
-      if (id === 'test case') {
+      if (id.startsWith('test case')) {
         testCase.current = code + ';'
+        return
+      }
+      if (id.startsWith('setup')) {
+        setup.current = code + ';'
         return
       }
       result.push({ id, code, run: () => {}, result: results?.[id] ?? EMPTY_RESULT })
     })
+
     result.forEach(b => {
-      b.run = eval(`(function(){${b.code};${testCase.current}})`)
+      b.run = eval(`${setup.current}; (function(){${b.code};${testCase.current}})`)
     })
     return result
   })

@@ -13,9 +13,9 @@ I've included runnable examples for all points where it applies. They show by de
 
 ### 0. Avoid work
 
-This might sound evident, but the first optimization I always try to go for is avoid work that can be avoided.
+This might sound evident, but it needs to be here. If you're trying to optimize, you should first look into avoiding work.
 
-### 1. Avoid string comparisons, prefer integers
+## 1. Avoid string comparisons, prefer integers
 
 Javascript makes it easy to hides the real cost of string comparisons. If you need to compare strings in C, you'd use `strcmp(a, b)`, versus `a == b` for integers. Javascript uses
 `===` for both, so you don't see the `strcmp`. But it's there. Lurking. Bigger string also means longer compare, string comparison is `O(n)`. One common javascript pattern to avoid is strings-as-enums. But with the advent of typescript this should be easily avoidable, as
@@ -89,7 +89,7 @@ As you can see, the difference can be significant. The difference isn't just due
 
 In string heavy code, this can have a huge impact. For example, I was able to [make this JSON5 javascript parser run 2x faster](https://github.com/json5/json5/pull/278) just by replacing strings by numbers.
 
-### 2. Avoid different shapes
+## 2. Avoid different shapes
 
 Javascript engines try to optimize their code by assuming that javascript objects have a specific shape, and that functions will receive objects of the same shape. For example, at runtime if the following function receives two objects with the shape `{ x: number, y: number }`, engines are going to emit fast code that expects objects with that shape.
 
@@ -105,29 +105,29 @@ If one would instead pass an object not with the shape `{ x, y }` but with the s
 
 ```javascript
 // 1. monomorphic
-const o1 = { a: 1, b: 2, c: 3, d: 4, e: 5 } // all the same shape
-const o2 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
-const o3 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
-const o4 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
-const o5 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
+const o1 = { a: 4, b: 0, c: 0, d: 0, e: 0 } // all the same shape
+const o2 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
+const o3 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
+const o4 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
+const o5 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
 ```
 
 ```javascript
 // 2. polymorphic
-const o1 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
-const o2 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
-const o3 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
-const o4 = { a: 1, b: 2, c: 3, d: 4, e: 5 }
-const o5 = { b: 2, a: 1, c: 3, d: 4, e: 5 } // "a" and "b" reversed
+const o1 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
+const o2 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
+const o3 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
+const o4 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
+const o5 = { b: 0, a: 4, c: 0, d: 0, e: 0 } // "a" and "b" reversed
 ```
 
 ```javascript
 // 3. megamorphic
-const o1 = { a: 1, b: 2, c: 3, d: 4, e: 5 } // "a" in 1st key
-const o2 = { b: 2, a: 1, c: 3, d: 4, e: 5 } // "a" in 2nd key
-const o3 = { b: 2, c: 3, a: 1, d: 4, e: 5 } // "a" in 3rd key
-const o4 = { b: 2, c: 3, d: 4, a: 1, e: 5 } // "a" in 4th key
-const o5 = { b: 2, c: 3, d: 4, e: 5, a: 1 } // "a" in 5th key
+const o1 = { a: 4, b: 0, c: 0, d: 0, e: 0 } // "a" in 1st key
+const o2 = { b: 0, a: 4, c: 0, d: 0, e: 0 } // "a" in 2nd key
+const o3 = { b: 0, c: 0, a: 4, d: 0, e: 0 } // "a" in 3rd key
+const o4 = { b: 0, c: 0, d: 0, a: 4, e: 0 } // "a" in 4th key
+const o5 = { b: 0, c: 0, d: 0, e: 0, a: 4 } // "a" in 5th key
 ```
 
 ```javascript
@@ -152,7 +152,7 @@ for (let i = 0; i < 1000000; i++) {
   client:load
 />
 
-### 3. Avoid allocations
+## 3. Avoid allocations
 
 Memory allocations are also a good target for optimizations. Once again, javascript makes certain patterns very easy, which hides their cost. For example, all the following lines generate an allocation:
 
@@ -184,7 +184,7 @@ The problem with memory allocations is that
 
 In general, in performance sensitive code, try to avoid any javascript function that returns a complex object such as an object or an array. Let's see an example with this function that creates a clone of an object, minus the `excluded` keys:
 
-<div id="benchmark-memory" class="code-blocks">
+<div id="benchmark-alloc" class="code-blocks">
 
 
 ```javascript
@@ -227,12 +227,12 @@ for (let i = 0; i < 1000000; i++) {
 </div>
 
 <Benchmark
-  id="benchmark-memory"
+  id="benchmark-alloc"
   results={{"1. Object.keys()":{"runTime":-1023,"amountOfRounds":15,"percent":75},"2. No allocations":{"runTime":-1035,"amountOfRounds":20,"percent":100}}}
   client:load
 />
 
-For the same logic, we were able to save 25% of the cost simply be avoiding `Object.keys()`. This function by the way is what [babel desugars object destructuring into](https://github.com/babel/babel/pull/16357)! So if you destructured an object with 100 keys, not only were you making a copy of that object, but you were also allocating an array of a 100 keys. Hopefully it should be resolved by the time you read this.
+For the same logic, we were able to save 25% of the cost simply by avoiding `Object.keys()`. This function by the way is what [babel desugars object destructuring into](https://github.com/babel/babel/pull/16357)! So if you destructured an object with 100 keys, not only were you making a copy of that object, but you were also allocating an array of a 100 keys. Hopefully it should be resolved by the time you read this.
 
 I'll note that avoidiing allocations by using imperative code is the place where the performance vs readability tradeoff is the most apparent, so using imperative code to replace something as readable as this example below, requires consideration.
 
@@ -247,22 +247,171 @@ const result =
 // the beauty.
 ```
 
+## 4. Avoid indirection
 
-0. Avoid indirection
-0. Avoid map/filter/reduce
-0. Cache locality
-0. Use proper data structures
-0. Use profiler (chrome + firefox)
-0. Use style invalidation inspector
-0. Use eval
+Another place to look for optimization gains is any source of indirection, of which I can see 3 main sources:
 
-0. Avoid work
-0. Avoid string comparisons, prefer ints
-0. Avoid different shapes
-0. Avoid allocations
-0. Avoid indirection
-0. Avoid map/filter/reduce
-0. Cache locality
+```javascript
+const point = { x: 10, y: 20 }
+
+// 1.
+// Proxy objects are harder to optimize because their get/set function might
+// be running custom logic, so engines can't make their usual assumptions.
+const proxy = new Proxy(point, { get: (t, k) => { return t[k] } })
+// Some engines can make proxy costs disappear, but those optimizations are
+// expensive to make and can break easily.
+const x = proxy.x
+
+// 2.
+// Usually ignored, but accessing an object via `.` or `[]` is also an
+// indirection. In easy cases, the engine may very well be able to optimize the
+// cost away:
+const x = point.x
+// But each additional access multiplies the cost, and makes it harder for the
+// engine to make assumptions about the state of `point`:
+const x = this.state.circle.center.point.x
+
+// 3.
+// And finally, function calls can also have a cost. Engine are generally good
+// at inlining these:
+function getX(p) { return p.x }
+const x = getX(p)
+// But it's not garanteed that they can. In particular if the function call
+// isn't from a static function but comes from e.g. an argument:
+function Component({ point, getX }) {
+  return getX(point)
+}
+```
+
+The proxy benchmark is particularly brutal on V8 at the moment:
+
+<div id="benchmark-proxy" class="code-blocks">
+
+
+```javascript
+// 1. proxy access
+const point = new Proxy({ x: 10, y: 20 }, {
+  get: (t, k) => t[k]
+})
+
+let result = 0
+for (let i = 0; i < 100000; i++) {
+  result = result + point.x
+}
+```
+
+```javascript
+// 2. direct access
+const point = { x: 10, y: 20 }
+const x = point.x
+
+let result = 0
+for (let i = 0; i < 100000; i++) {
+  result = result + x
+}
+```
+
+</div>
+
+<Benchmark
+  id="benchmark-proxy"
+  results={{"1. proxy access":{"runTime":-1000,"amountOfRounds":659,"percent":2.8},"2. direct access":{"runTime":-1000,"amountOfRounds":23544,"percent":100}}}
+  client:load
+/>
+
+<div id="benchmark-object" class="code-blocks">
+
+I also wanted to showcase accessing a deeply nested object vs direct access, but engines are very good at optimizing away object accesses when there is a hot loop and a constant object. I had to insert a bit of randomness to prevent it.
+
+```javascript
+// 1. nested access
+const a = { state: { center: { point: { x: 10, y: 20 } } } }
+const b = { state: { center: { point: { x: 10, y: 20 } } } }
+const get = (i) => i % 2 ? a : b
+
+let result = 0
+for (let i = 0; i < 100000; i++) {
+  result = result + get(i).state.center.point.x
+}
+```
+
+```javascript
+// 2. direct access
+const a = { x: 10, y: 20 }.x
+const b = { x: 10, y: 20 }.x
+const get = (i) => i % 2 ? a : b
+
+let result = 0
+for (let i = 0; i < 100000; i++) {
+  result = result + get(i)
+}
+```
+
+</div>
+
+<Benchmark
+  id="benchmark-object"
+  results={{"1. nested access":{"runTime":-1000,"amountOfRounds":9871,"percent":42.08},"2. direct access":{"runTime":-1000,"amountOfRounds":23460,"percent":100}}}
+  client:load
+/>
+
+
+## Consider cache locality
+
+This point is actually implicit in the one above, but I'll expand on the subject. Retrieving memory from the RAM is *slow*. To speed up things, computers will fetch more than the memory asked by the program, because usually if you have asked for a region of memory, there's a pretty good chance that you'll be interested in the region that comes right after. CPUs also have various memory caches that are faster than the RAM: L1, L2, L3. Those are faster, but also smaller. So it stores there memory while it's working on it, and writes it back to the main RAM only when there's not enough room in the L caches and space needs to be cleared for new incoming memory.
+
+The notable problem in javascript is that the only way to control that we have cache-friendly sequential memory is to have arrays of numbers. No other data type can give us that guarantee, except maybe booleans.
+
+<div id="benchmark-memory" class="code-blocks">
+
+```javascript
+// setup: we need to create the object ahead of time, we don't want
+// to include their creating time in the benchmark
+
+// array of points: we simulate some garbage, to space the objects in memory
+const points = new Array(8192)
+for (let i = 0; i < points.length; i++) {
+  points[i] = { x: 0, y: 0 }
+  points[i] = { x: 0, y: 0 }
+  points[i] = { x: 0, y: 0 }
+  points[i] = { x: 0, y: 0 }
+  points[i] = { x: 5, y: 10 }
+}
+
+// arrays of numbers: these are compact in memory
+const xs = new Array(8192).map(() => 5)
+const ys = new Array(8192).map(() => 10)
+
+```
+
+```javascript
+// 1. without locality
+let result = 0
+for (let i = 0; i < points.length; i++) {
+  result += points[i].x
+}
+```
+
+```javascript
+// 2. with locality
+let result = 0
+for (let i = 0; i < xs.length; i++) {
+  result += xs[i]
+}
+```
+
+</div>
+
+<Benchmark
+  id="benchmark-memory"
+  results={{"1. without locality":{"runTime":-1000,"amountOfRounds":127651,"percent":57.97},"2. with locality":{"runTime":-1000,"amountOfRounds":220214,"percent":100}}}
+  client:load
+/>
+
+How to encode objects as arrays of numbers is dependant on the memory access patterns, in other words you need to know how you plan to acces your data. In the example above, the points are split across `xs` and `ys` arrays, which is really nice in the case where accessing all the `x` values and `y` values separately is frequent. But if instead we knew that our most frequent operation would be something like `p.x + p.y`, then it would make more sense to encode the points as `[x, y, x, y, x, y, ...]`, instead of `[x, x, x, ...]` and `[y, y, y, ...]`.
+
+
+
 0. Use proper data structures
 0. Use profiler (chrome + firefox)
 0. Use style invalidation inspector
