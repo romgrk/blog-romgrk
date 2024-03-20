@@ -4,6 +4,7 @@ import FormattedDate from './FormattedDate.astro';
 
 const {
   title, description, pubDate, updatedDate, heroImage,
+  sidebar,
   headings,
 } = Astro.props;
 
@@ -79,16 +80,17 @@ const {
   }
 </style>
 
-<script>
+<script define:vars={{ MAX_DEPTH: sidebar?.depth ?? 6 }}>
+
 document.addEventListener('DOMContentLoaded', () => {
   const html = document.querySelector('html')
   const sidebar = document.querySelector('.post-sidebar')
   const headings =
-    Array.from(document.querySelector('.post-body')!
-      .querySelectorAll('h1, h2, h3, h4, h5, h6'))
+    Array.from(document.querySelector('.post-body')
+      .querySelectorAll(
+        Array.from({ length: MAX_DEPTH }).map((_, i) => `h${i + 1}`).join(', ')))
 
-  const sidebarLinkFor = id =>
-    document.querySelector(`[href="#${id}"]`)
+  const sidebarLinkFor = id => document.querySelector(`[href="#${id}"]`)
 
   document.addEventListener('scroll', () => {
     const active =
@@ -98,10 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return active
       })
 
-    console.log(headings.map(h => h.offsetTop), active)
-
     const current = sidebar.querySelector('.active')
-    const isMatching = current.href.slice(1) === active?.id
+    const isMatching = current?.href.slice(1) === active?.id
 
     if (current && !isMatching) {
       current.classList.remove('active')
@@ -109,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (active && !isMatching) {
       sidebarLinkFor(active.id).classList.add('active')
     }
-    console.log(html.scrollTop)
   })
 })
 </script>
@@ -147,9 +146,11 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="post-sidebar-content">
       {
         headings.map((heading, i) =>
-          <a href={`#${heading.slug}`} class={i === 0 ? 'active' : ''}>
-            {heading.text}
-          </a>
+          sidebar?.depth && sidebar.depth < heading.depth ?
+            null :
+            <a href={`#${heading.slug}`}>
+              {heading.text}
+            </a>
         )
       }
     </div>

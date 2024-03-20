@@ -32,6 +32,7 @@ export function Benchmark({ id, results }: { id: string, results?: Results }) {
   const [blocks, setBlocks] = useState(() => {
     if (typeof document === 'undefined') return []
     let result = [] as Block[]
+    setup.current = ''
     Array.from(document.querySelectorAll(`#${id} pre > code`)).forEach((block, index) => {
       const code = block.textContent!.trim()
       const id = code.startsWith('//') ? code.slice(2).split('\n')[0].trim() : `Case ${index + 1}`
@@ -40,7 +41,7 @@ export function Benchmark({ id, results }: { id: string, results?: Results }) {
         return
       }
       if (id.startsWith('setup')) {
-        setup.current = code + ';'
+        setup.current += code + ';'
         return
       }
       result.push({ id, code, run: () => {}, result: results?.[id] ?? EMPTY_RESULT })
