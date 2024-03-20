@@ -543,6 +543,10 @@ class ConcatenatedString {
   }
 }
 
+function concat(left, right) {
+  return new ConcatenatedString(left, right)
+}
+
 const first = new BytesString(['H', 'e', 'l', 'l', 'o', ' '])
 const second = new BytesString(['w', 'o', 'r', 'l', 'd'])
 
