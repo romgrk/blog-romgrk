@@ -458,7 +458,91 @@ Ruthlessly eliminate every single data or memory allocations that can be elimina
 
 For more details on CPU and memory, [see this link](https://www.akkadia.org/drepper/cpumemory.pdf).
 
-## 6. Use eval
+<br />
+<RandomPlant />
+<br />
+
+## 6. Avoid large objects
+
+I'm not going to explain much here as most of this is already explained by sections 4 and 5. But you should know that engines represent small objects as "shapes", as we've seen in section 2. However, when the shape grows too large, the engine has no choice but to use a regular hashmap (same principle as `Map`). Let's see how it behaves with this map of some users indexed by their ID.
+
+<div id="benchmark-large-object" class="code-blocks">
+
+```javascript
+// setup:
+const USERS_LENGTH = 1_000
+```
+
+```javascript
+// setup:
+const byId = {}
+Array.from({ length: USERS_LENGTH }).forEach((_, id) => {
+  byId[id] = { id, name: 'John'}
+})
+```
+
+```javascript
+// 1. [] access
+let _ = 0; Object.keys(byId).forEach(id => { _ += byId[id].id })
+```
+
+```javascript
+// 2. direct access
+let _ = 0; Object.values(byId).forEach(user => { _ += user.id })
+```
+
+</div>
+
+<Benchmark
+  id="benchmark-large-object"
+  results={{"1. [] access":{"runTime":-1000,"amountOfRounds":49173,"percent":43.18},"2. direct access":{"runTime":-1000,"amountOfRounds":113887,"percent":100}}}
+  client:load
+/>
+
+I tested the case above with a reasonable 1,000 entries object, but the performance keeps degrading as the size of the object grows:
+
+<div id="benchmark-large-object-larger" class="code-blocks">
+
+```javascript
+// setup:
+const USERS_LENGTH = 100_000
+```
+
+<div class="hidden">
+
+```javascript
+// setup:
+const byId = {}
+Array.from({ length: USERS_LENGTH }).forEach((_, id) => {
+  byId[id] = { id, name: 'John'}
+})
+```
+
+```javascript
+// 1. [] access
+let _ = 0; Object.keys(byId).forEach(id => { _ += byId[id].id })
+```
+
+```javascript
+// 2. direct access
+let _ = 0; Object.values(byId).forEach(user => { _ += user.id })
+```
+
+</div>
+
+</div>
+
+<Benchmark
+  id="benchmark-large-object-larger"
+  results={{"1. [] access":{"runTime":-1005,"amountOfRounds":229,"percent":20.67},"2. direct access":{"runTime":-1000,"amountOfRounds":1108,"percent":100}}}
+  client:load
+/>
+
+#### What the eff should I do about this?
+
+As demonstrated above, avoid having to frequently index into the object. Prefer turning the object into an array beforehand. Organize your data to have the ID on the model, not just on the hashmap.
+
+## 7. Use eval
 
 Some javascript patterns are hard to optimize for engines, and by using `eval()` or its derivatives you can make those patterns disappear. In this example, we can observe how using `eval()` avoids the cost of creating an object with a dynamic object key:
 
@@ -511,7 +595,7 @@ createMessages(key, values)
 Obviously the usual warnings about `eval()` apply: don't trust user input, sanitize anything that gets passed into the `eval()`'d code, and don't create any XSS possibility. Also note that some environments don't allow access to `eval()`, such as browser pages with a CSP.
 
 
-## 7. Use strings carefully
+## 8. Use strings carefully
 
 We've already seen above how strings are more expensive than they appear. Well I have kind of a good news/bad news situation here, which I'll announce in the only logical order (bad first, good second). Strings are more complex than they appear. But they can also be quite efficient in some situations.
 
@@ -653,11 +737,11 @@ const small = small.replace('#'.repeat(small.length + 1), '')
 For more details, see [string.h on V8](https://github.com/v8/v8/blob/main/src/objects/string.h) or [JSString.h on JavaScriptCore](https://github.com/WebKit/WebKit/blob/main/Source/JavaScriptCore/runtime/JSString.h).
 
 
-## 8. Benchmarking
+## 9. Benchmarking
 
 I'll list the common things to think about when benchmarking:
 
-### 8.1 Avoid micro-benchmarks
+### 9.1 Avoid micro-benchmarks
 
 Run your code in production mode and base your optimizations on those observations. JS engines are very complex, and will often behave differently in micro-benchmarks than in real-world scenarios. For example, take this micro-benchmark:
 
@@ -676,26 +760,33 @@ for (let i = 0; i < 100_000; i++) {
 
 If you've payed attention sooner, you will realize that the engine will specialize the function for the shape `{ type: string, count: number }`. But does that hold true in your real-world use-case? Is `props` always of that shape, or do you also need to support any kind of shape? If you receive many shapes in production, this function will behave differently then.
 
-### 8.2 Doubt your results
+### 9.2 Doubt your results
 
 If you've just optimized a function and it now runs 100x faster, doubt it. Try to disprove your results, try them in production mode, throw stuff at it.
 
-## 9. Profiling
+### 9.3 Pick your target
+
+Different engines will optimize certain patterns better or worst than others. You should benchmark for the engine(s) that are relevant to you, and prioritize which one is more important. [Here's a real-world example](https://github.com/babel/babel/pull/16357) in Babel where improving V8 means decreasing JSC's performance.
+
+## 10. Profiling
 
 Various remarks about devtools and profilers.
 
-### 9.1
+### 10.1
 
 If you're profiling in the browser, make sure you use a clean and empty browser profile. I even use a separate browser for this. If you're profiling with your own profile and have browser extensions enabled, they can mess up the measurements. React devtools in particular will substantially affect results, rendering code may appear slower than it appears ~in the mirror~ to your users.
 
-### 9.2
+### 10.2
 
 Browser profiling tools are sample-based profilers, which take a sample of your stack at regular intervals. This had a big disadvantage: very small but frequent functions might be called between those samples, and might be very much underreported in the stack charts you'll get. Use Firefox devtools with a custom sample interval or Chrome devtools with CPU throttling to avoid this issue.
 
-### 9.3
+### 10.3
 
-https://github.com/iamakulov/devtools-perf-features
+Keep up with devtools, each of them have particular features than can be useful, for example: https://github.com/iamakulov/devtools-perf-features
 
+## Final notes
+
+Hope you learned some useful tricks, if you have any comments or corrections, email link in the footer.
 
 <br />
 <br />
