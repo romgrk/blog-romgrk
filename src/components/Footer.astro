@@ -5,7 +5,8 @@ const today = new Date();
 <footer class="footer">
 
   <div class="footer-links">
-    <a href="https://github.com/romgrk" target="_blank">
+    <a href="mailto:romgrk.cc@gmail.com">Comments?</a>
+    <a href="https://github.com/romgrk" target="_blank" class="footer-github">
       <span class="fa fa-github" />
       <span class="sr-only">Github</span>
     </a>
@@ -45,12 +46,15 @@ const today = new Date();
 
   .footer-links {
     display: flex;
+    flex-direction: column;
     justify-content: center;
-    gap: 1em;
   }
   .footer-links a {
     text-decoration: none;
     color: var(--color-muted-fg);
+    font-size: 0.8em;
+  }
+  .footer-links a.footer-github {
     font-size: 1.5em;
   }
 </style>

@@ -7,7 +7,7 @@ const pausePerBlock = 500
 type Block = {
   id: string,
   code: string,
-  run: Function,
+  run?: Function,
   result: {
     runTime: number,
     amountOfRounds: number,
@@ -24,7 +24,11 @@ const EMPTY_RESULT = {
 type Result = typeof EMPTY_RESULT
 type Results = Record<string, Result>
 
-export function Benchmark({ id, results }: { id: string, results?: Results }) {
+export function Benchmark({ id, iterations = 1, results }: {
+  id: string,
+  iterations?: number,
+  results?: Results
+}) {
   const testCase = useRef('')
   const setup = useRef('')
   const [isRunning, setRunning] = useState(false)
@@ -44,18 +48,9 @@ export function Benchmark({ id, results }: { id: string, results?: Results }) {
         setup.current += code + ';'
         return
       }
-      result.push({ id, code, run: () => {}, result: results?.[id] ?? EMPTY_RESULT })
+      result.push({ id, code, run: undefined, result: results?.[id] ?? EMPTY_RESULT })
     })
 
-    result.forEach(b => {
-      const code = `${setup.current}; (function(){${b.code};${testCase.current}})`
-      try {
-        b.run = eval(code)
-      } catch(e) {
-        console.error(e)
-        console.log(code)
-      }
-    })
     return result
   })
 
@@ -64,7 +59,9 @@ export function Benchmark({ id, results }: { id: string, results?: Results }) {
     let timer = performance.now()
     let counter = 0
     do {
-      block.run()
+      for (let i = 0; i < iterations; i++) {
+        block.run!()
+      }
       counter++
       timer = performance.now()
     } while(timer - startTimer < currentTimeToRun)
@@ -74,6 +71,17 @@ export function Benchmark({ id, results }: { id: string, results?: Results }) {
   const runTests = async () => {
     setProgress(0)
     setRunning(true)
+
+    blocks.forEach(b => {
+      const code = `${setup.current}; (function(){${b.code};${testCase.current}})`
+      try {
+        b.run = eval(code)
+      } catch(e) {
+        console.error(e)
+        console.log(code)
+      }
+    })
+
     await sleep(500)
 
     for (let block of blocks) {
@@ -113,6 +121,11 @@ export function Benchmark({ id, results }: { id: string, results?: Results }) {
     setProgress(0)
     setRunning(false)
     setBlocks([...blocks])
+
+    blocks.forEach(b => {
+      b.run = undefined
+    })
+
     console.log(JSON.stringify(blocks.reduce((rs, block) => {
       rs[block.id] = block.result
       return rs

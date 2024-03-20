@@ -511,17 +511,186 @@ createMessages(key, values)
 Obviously the usual warnings about `eval()` apply: don't trust user input, sanitize anything that gets passed into the `eval()`'d code, and don't create any XSS possibility. Also note that some environments don't allow access to `eval()`, such as browser pages with a CSP.
 
 
-## 7. Beware of strings
+## 7. Use strings carefully
 
+We've already seen above how strings are more expensive than they appear. Well I have kind of a good news/bad news situation here, which I'll announce in the only logical order (bad first, good second). Strings are more complex than they appear. But they can also be quite efficient in some situations.
+
+String operations are a core part of javascript due to its context. To optimize string-heavy code, engines had to be creative. And by that I mean, they had to represent the `String` object with multiple string representation in C++, depending on the use case. There are two general cases you should worry about, because they hold true for V8 (the most common engine by far), and generally also in other engines.
+
+First, strings concatenated with `+` don't create a copy of the two input strings. It creates a pointer to each substring. If it was in typescript, it would be something like this:
+
+```typescript
+class String {
+  abstract value(): char[] {}
+}
+
+class BytesString {
+  constructor(bytes: char[]) {
+    this.bytes = bytes
+  }
+  value() {
+    return this.bytes
+  }
+}
+
+class ConcatenatedString {
+  constructor(left: String, right: String) {
+    this.left = left
+    this.right = right
+  }
+  value() {
+    return [...this.left.value(), ...this.right.value()]
+  }
+}
+
+const first = new BytesString(['H', 'e', 'l', 'l', 'o', ' '])
+const second = new BytesString(['w', 'o', 'r', 'l', 'd'])
+
+// See ma, no array copies!
+const message = concat(first, second)
+```
+
+Second, string slices also don't need to create copies: they can simply point to a range in another string. To continue with the example above:
+
+```typescript
+class SlicedString {
+  constructor(source: String, start: number, end: number) {
+    this.source = source
+    this.start = start
+    this.end = end
+  }
+  value() {
+    return this.source.value().slice(this.start, this.end)
+  }
+}
+
+function substring(source, start, end) {
+  return new SlicedString(source, start, end)
+}
+
+// This represents "He", but it still contains no array copies.
+// It's a SlicedString to a ConcatenatedString to two BytesString
+const firstTwoLetters = substring(message, 0, 2)
+```
+
+But here's the issue: once you need to start mutating those bytes, that's the moment you start paying copy costs. Let's say we go back to our `String` class and try to add a `.trimEnd` method:
+
+```typescript
+class String {
+  abstract value(): char[] {}
+
+  trimEnd() {
+    // `.value()` here might be calling
+    // our Sliced->Concatenated->2*Bytes string!
+    const bytes = this.value()
+
+    const result = bytes.slice()
+    while (result[result.length - 1] === ' ')
+      result.pop()
+    return new BytesString(result)
+  }
+}
+```
+
+So let's jump to an example where we compare using operations that use mutation versus only using concatenation:
+
+<div id="benchmark-strings" class="code-blocks">
+
+```javascript
+// setup:
+const classNames = ['primary', 'selected', 'active', 'medium']
+```
+
+```javascript
+// 1. mutation
+const result =
+  classNames
+    .map(c => `button--${c}`)
+    .join(' ')
+```
+
+```javascript
+// 2. concatenation
+const result =
+  classNames
+    .map(c => 'button--' + c)
+    .reduce((acc, c) => acc + ' ' + c, '')
+```
+
+</div>
+
+<Benchmark
+  id="benchmark-strings"
+  iterations={5000}
+  results={{"1. mutation":{"runTime":-1000,"amountOfRounds":1808,"percent":37.43},"2. concatenation":{"runTime":-1000,"amountOfRounds":4830,"percent":100}}}
+  client:load
+/>
+
+#### What the eff should I do about this?
+
+There is a lot of complexity to strings across all the engines. I've skimmed very quickly, but there are often minimum lengths for each of those string representations, for example a concatenated string might not be used for very small strings. Or sometimes there are limits, for example avoiding pointing to a substring of a substring. In general, try to **avoid mutation for as long as possible**. This includes methods such as `.trim()`, `.replace()`, etc. In some engines, string templates can also be slower than `+`. In V8 at the moment, it's the case. This is true now, but might not be in the future. The most important thing is: __benchmark__.
+
+Final note, but one of the implications of the `SlicedString` above is that if a small substring to a very large string is alive in memory, it might prevent the garbage collector from collecting the huge string! This is the case in V8. If you're processing large texts and extracting small strings from it, you might be leaking large amounts of memory.
+
+```javascript
+const large = Array.from({ length: 10_000 }).map(() => 'string').join('').trim()
+// will keep alive `large`!
+const small = large.slice(10, 15)
+```
+
+The solution here is to use mutation methods to our advantage. If we use one of them on `small`, it will force a copy, and the old pointer to `large` will be lost:
+
+```javascript
+// replace a token that doesn't exist
+const small = small.replace('#'.repeat(small.length + 1), '')
+```
+
+
+For more details, see [string.h on V8](https://github.com/v8/v8/blob/main/src/objects/string.h) or [JSString.h on JavaScriptCore](https://github.com/WebKit/WebKit/blob/main/Source/JavaScriptCore/runtime/JSString.h).
 
 
 ## 8. Benchmarking
 
+I'll list the common things to think about when benchmarking:
+
+### 8.1 Avoid micro-benchmarks
+
+Run your code in production mode and base your optimizations on those observations. JS engines are very complex, and will often behave differently in micro-benchmarks than in real-world scenarios. For example, take this micro-benchmark:
+
+```javascript
+const a = { type: 'div', count: 5, }
+const b = { type: 'span', count: 10 }
+
+function typeEquals(a, b) {
+  return a.type === b.type
+}
+
+for (let i = 0; i < 100_000; i++) {
+  typeEquals(a, b)
+}
+```
+
+If you've payed attention sooner, you will realize that the engine will specialize the function for the shape `{ type: string, count: number }`. But does that hold true in your real-world use-case? Is `props` always of that shape, or do you also need to support any kind of shape? If you receive many shapes in production, this function will behave differently then.
+
+### 8.2 Doubt your results
+
+If you've just optimized a function and it now runs 100x faster, doubt it. Try to disprove your results, try them in production mode, throw stuff at it.
+
 ## 9. Profiling
 
-0. Use proper data structures
-0. Use profiler (chrome + firefox)
-0. Use style invalidation inspector
+Various remarks about devtools and profilers.
+
+### 9.1
+
+If you're profiling in the browser, make sure you use a clean and empty browser profile. I even use a separate browser for this. If you're profiling with your own profile and have browser extensions enabled, they can mess up the measurements. React devtools in particular will substantially affect results, your rendering code may appear longer than it appears to your users.
+
+### 9.2
+
+Browser profiling tools are sample-based profilers, which takes a sample of your stack at regular intervals. This had a big disadvantage: very small but frequent functions might be called between those samples, and might be very much underreported in the stack charts you'll get. Use Firefox devtools with a custom sample interval, or Chrome devtools with CPU throttling.
+
+### 9.3
+
+https://github.com/iamakulov/devtools-perf-features
 
 
 <br />
@@ -531,6 +700,7 @@ Obviously the usual warnings about `eval()` apply: don't trust user input, sanit
 <br />
 
 
+{/*
 
 <div id="benchmark-alloc" class="code-blocks">
 
@@ -594,3 +764,5 @@ const result =
 // I'm not even going to translate it to imperative code, it would ruin
 // the beauty.
 ```
+
+*/}
