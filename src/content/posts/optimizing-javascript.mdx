@@ -155,7 +155,7 @@ for (let i = 0; i < 1000000; i++) {
 
 ## 3. Avoid array/object methods
 
-I love functional programming as much as anyone else, but unless you're working in Haskell/OCaml/Rust where functional code gets compiled to efficient machine code, functional JS code will probably always be slower than imperative code.
+I love functional programming as much as anyone else, but unless you're working in Haskell/OCaml/Rust where functional code gets compiled to efficient machine code, functional code will probably always be slower than imperative code.
 
 ```javascript
 const result =
@@ -454,14 +454,74 @@ let r = 0; for (let i = 0; i < 100000; i++) { r += buffer[random(RAM)] }
 
 #### What the eff should I do about this?
 
-Ruthlessly eliminate every single data or memory allocations that can be eliminated. The smaller your dataset is, the faster your program will run.
+Ruthlessly eliminate every single data or memory allocations that can be eliminated. The smaller your dataset is, the faster your program will run. Memory I/O is the bottleneck for 99% of programs. Another good strategy can be to split your work into chunks, and ensure you work on a small dataset at a time.
 
 For more details on CPU and memory, [see this link](https://www.akkadia.org/drepper/cpumemory.pdf).
+
+## 6. Use eval
+
+Some javascript patterns are hard to optimize for engines, and by using `eval()` or it derivaties you can make those patterns disappear. In this example, we can observe how using `eval()` avoids the cost of creating an object with a dynamic object key:
+
+
+<div id="benchmark-eval" class="code-blocks">
+
+```javascript
+// setup:
+const key = 'requestId'
+const values = Array.from({ length: 100_000 }).fill(42)
+```
+
+```javascript
+// 1. without eval
+function createMessages(key, values) {
+  const messages = []
+  for (let i = 0; i < values.length; i++) {
+    messages.push({ [key]: values[i] })
+  }
+  return messages
+}
+
+createMessages(key, values)
+```
+
+```javascript
+// 2. with eval
+function createMessages(key, values) {
+  const messages = []
+  const createMessage = new Function('value',
+    `return { ${JSON.stringify(key)}: value }`
+  )
+  for (let i = 0; i < values.length; i++) {
+    messages.push(createMessage(values[i]))
+  }
+  return messages
+}
+
+createMessages(key, values)
+```
+
+</div>
+
+<Benchmark
+  id="benchmark-eval"
+  results={{"1. without eval":{"runTime":-1005,"amountOfRounds":233,"percent":53.2},"2. with eval":{"runTime":-1001,"amountOfRounds":438,"percent":100}}}
+  client:load
+/>
+
+Obviously the usual warnings about `eval()` apply: don't trust user input, sanitize anything that gets passed into the `eval()`'d code, and don't create any XSS possibility. Also note that some environments don't allow access to `eval()`, such as browser pages with a CSP.
+
+
+## 7. Beware of strings
+
+
+
+## 8. Benchmarking
+
+## 9. Profiling
 
 0. Use proper data structures
 0. Use profiler (chrome + firefox)
 0. Use style invalidation inspector
-0. Use eval
 
 
 <br />

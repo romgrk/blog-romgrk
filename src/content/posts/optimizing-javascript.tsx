@@ -48,7 +48,13 @@ export function Benchmark({ id, results }: { id: string, results?: Results }) {
     })
 
     result.forEach(b => {
-      b.run = eval(`${setup.current}; (function(){${b.code};${testCase.current}})`)
+      const code = `${setup.current}; (function(){${b.code};${testCase.current}})`
+      try {
+        b.run = eval(code)
+      } catch(e) {
+        console.error(e)
+        console.log(code)
+      }
     })
     return result
   })
