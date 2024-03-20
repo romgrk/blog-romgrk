@@ -2,10 +2,9 @@
 title: 'Optimizing Javascript for fun and for profit'
 description: ''
 pubDate: 'Mar 15 2024'
-draft: true
 ---
 import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
-import { Benchmark } from './optimizing-react-and-javascript.tsx'
+import { Benchmark } from './optimizing-javascript.tsx'
 
 
 I often feel like javascript code in general runs much slower than it could, simply because it's not optimized properly. Here is a summary of common optimization techniques. The tradeoff for performance is of course readability in most cases, so the question of when to go for performance vs readability is an exercise left to the reader. I'll also note that talking about optimization necessarily requires talking about benchmarking. Micro-optimizing a function for hours to have it run 100x faster is meaningless if the function only represented 0.1% of the actual overall runtime to start with. If one is optimizing a codebase, the first and most important step is benchmarking. I'll cover the topic in the later points.
@@ -16,7 +15,7 @@ I've included runnable examples for all points where it applies. They show by de
 
 This might sound evident, but it needs to be here. If you're trying to optimize, you should first look into avoiding work.
 
-## 1. Avoid string comparisons, prefer integers
+## 1. Avoid string comparisons
 
 Javascript makes it easy to hides the real cost of string comparisons. If you need to compare strings in C, you'd use `strcmp(a, b)`, versus `a == b` for integers. Javascript uses
 `===` for both, so you don't see the `strcmp`. But it's there. Lurking. Bigger string also means longer compare, string comparison is `O(n)`. One common javascript pattern to avoid is strings-as-enums. But with the advent of typescript this should be easily avoidable, as
@@ -190,7 +189,7 @@ In general, in performance sensitive code, try to avoid any javascript function 
 
 ```javascript
 // 1. Object.keys()
-function cloneWithoutKeys(object, excluded) {
+function cloneWithoutProps(object, excluded) {
   const result = {}
   const keys = Object.keys(object)
   for (let i = 0; i < keys.length; i++) {
@@ -204,7 +203,7 @@ function cloneWithoutKeys(object, excluded) {
 
 ```javascript
 // 2. No allocations
-function cloneWithoutKeys(object, excluded) {
+function cloneWithoutProps(object, excluded) {
   const result = {}
   for (const key in object) {
     if (object.hasOwnProperty(key)) {
@@ -221,7 +220,7 @@ function cloneWithoutKeys(object, excluded) {
 const object = { a: 1, b: 2, c: 3, d: 4, e: 5 }
 const excluded = ['d', 'e']
 for (let i = 0; i < 1000000; i++) {
-  const result = cloneWithoutKeys(object, excluded)
+  const result = cloneWithoutProps(object, excluded)
 }
 ```
 
@@ -359,30 +358,27 @@ for (let i = 0; i < 100000; i++) {
 
 ## Consider cache locality
 
-This point is actually implicit in the one above, but I'll expand on the subject. Retrieving memory from the RAM is *slow*. To speed up things, computers will fetch more than the memory asked by the program, because usually if you have asked for a region of memory, there's a pretty good chance that you'll be interested in the region that comes right after. CPUs also have various memory caches that are faster than the RAM: L1, L2, L3. Those are faster, but also smaller. So it stores there memory while it's working on it, and writes it back to the main RAM only when there's not enough room in the L caches and space needs to be cleared for new incoming memory.
+This point is actually implicit in the one above, but I'll expand on the subject. Retrieving memory from the RAM is *slow*. To speed up things, computers will fetch more than the memory asked by the program, because usually if you have asked for a region of memory, there's a pretty good chance that you'll be interested in the region that comes right after. CPUs also have various memory caches that are faster than the RAM: L1, L2, L3. Those are faster, but also smaller, so only a small subset of working memory is kept there, and it's written back to the main RAM only when there's not enough room in the L caches and space needs to be cleared for new incoming memory.
 
 The notable problem in javascript is that the only way to control that we have cache-friendly sequential memory is to have arrays of numbers. No other data type can give us that guarantee, except maybe booleans.
 
 <div id="benchmark-memory" class="code-blocks">
 
 ```javascript
-// setup: we need to create the object ahead of time, we don't want
-// to include their creating time in the benchmark
+// setup:
+
+const KB = 1024
+const MB = 1024 * KB
 
 // array of points: we simulate some garbage, to space the objects in memory
-const points = new Array(8192)
+const points = new Array(8 * KB)
 for (let i = 0; i < points.length; i++) {
-  points[i] = { x: 0, y: 0 }
-  points[i] = { x: 0, y: 0 }
-  points[i] = { x: 0, y: 0 }
-  points[i] = { x: 0, y: 0 }
   points[i] = { x: 5, y: 10 }
 }
 
 // arrays of numbers: these are compact in memory
-const xs = new Array(8192).map(() => 5)
-const ys = new Array(8192).map(() => 10)
-
+const xs = new Int32Array(8 * KB).map(() => 5)
+const ys = new Int32Array(8 * KB).map(() => 10)
 ```
 
 ```javascript
@@ -410,7 +406,6 @@ for (let i = 0; i < xs.length; i++) {
 />
 
 How to encode objects as arrays of numbers is dependant on the memory access patterns, in other words you need to know how you plan to acces your data. In the example above, the points are split across `xs` and `ys` arrays, which is really nice in the case where accessing all the `x` values and `y` values separately is frequent. But if instead we knew that our most frequent operation would be something like `p.x + p.y`, then it would make more sense to encode the points as `[x, y, x, y, x, y, ...]`, instead of `[x, x, x, ...]` and `[y, y, y, ...]`.
-
 
 
 0. Use proper data structures

@@ -15,7 +15,7 @@ const post = posts.find((page) => page.slug === slug);
 if (!post)
   return Astro.redirect('/404');
 
-const { Content } = await post.render();
+const { Content, headings } = await post.render()
 
 ---
 
@@ -26,8 +26,8 @@ const { Content } = await post.render();
 
   <body>
     <Header />
-    <main>
-      <BlogPost {...post.data}>
+    <main class="no-padding">
+      <BlogPost {...post.data} headings={headings}>
         <Content />
       </BlogPost>
     </main>

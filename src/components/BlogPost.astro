@@ -2,10 +2,29 @@
 import type { CollectionEntry } from 'astro:content';
 import FormattedDate from './FormattedDate.astro';
 
-const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+const {
+  title, description, pubDate, updatedDate, heroImage,
+  headings,
+} = Astro.props;
+
 ---
 
 <style>
+  .post {
+    @apply flex;
+    @apply flex-row;
+  }
+  .post-padding {
+    width: var(--padding-width);
+  }
+  .post-content {
+    width: var(--content-width);
+    /* padding-left:  var(--padding-width); */
+  }
+  .post-sidebar {
+    width: var(--padding-width);
+  }
+
   .post-header {
     text-align: center;
     line-height: 1;
@@ -20,27 +39,120 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
     font-size: 1.1rem;
     margin-bottom: 1em;
   }
+  .post-sidebar {
+    @apply pt-72;
+    @apply flex;
+    @apply flex-row;
+    @apply justify-end;
+    @apply items-start;
+    @apply pl-4;
+  }
+  .post-sidebar-content {
+    @apply hidden;
+    @apply sticky;
+    @apply top-8;
+    @apply pr-4;
+    overflow: hidden;
+  }
+  @media (min-width: 1400px) {
+    .post-sidebar-content {
+      display: block !important;
+    }
+  }
+  .post-sidebar-content a {
+    @apply block;
+    @apply whitespace-nowrap;
+    @apply pl-8;
+    @apply pr-4;
+    @apply rounded-r;
+    @apply text-neutral-200;
+    @apply border-l;
+    @apply border-neutral-700;
+  }
+  .post-sidebar-content a:hover {
+    @apply bg-neutral-500/10;
+  }
+  .post-sidebar-content a.active {
+    @apply border-l;
+    @apply border-blue-400;
+    @apply bg-blue-400/10;
+  }
 </style>
 
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const html = document.querySelector('html')
+  const sidebar = document.querySelector('.post-sidebar')
+  const headings =
+    Array.from(document.querySelector('.post-body')!
+      .querySelectorAll('h1, h2, h3, h4, h5, h6'))
+
+  const sidebarLinkFor = id =>
+    document.querySelector(`[href="#${id}"]`)
+
+  document.addEventListener('scroll', () => {
+    const active =
+      headings.reduce((active, h) => {
+        if ((html.scrollTop + html.clientHeight / 2) > h.offsetTop)
+          return h
+        return active
+      })
+
+    console.log(headings.map(h => h.offsetTop), active)
+
+    const current = sidebar.querySelector('.active')
+    const isMatching = current.href.slice(1) === active?.id
+
+    if (current && !isMatching) {
+      current.classList.remove('active')
+    }
+    if (active && !isMatching) {
+      sidebarLinkFor(active.id).classList.add('active')
+    }
+    console.log(html.scrollTop)
+  })
+})
+</script>
+
 <article class="post">
-  <div class="post-header">
-    <div class="post-date">
-      <FormattedDate date={pubDate} />
+
+  <div class="post-padding">
+  </div>
+
+  <div class="post-content">
+    <div class="post-header">
+      <div class="post-date">
+        <FormattedDate date={pubDate} />
+        {
+          updatedDate && (
+            <div class="last-updated-on">
+              Last updated on <FormattedDate date={updatedDate} />
+            </div>
+          )
+        }
+      </div>
+      <h1 class="post-title">{title}</h1>
+
+      <hr />
+    </div>
+
+    <div class="post-body">
+      <!-- <CONTENT> -->
+      <slot />
+      <!-- </CONTENT> -->
+    </div>
+  </div>
+
+  <div class="post-sidebar">
+    <div class="post-sidebar-content">
       {
-        updatedDate && (
-          <div class="last-updated-on">
-            Last updated on <FormattedDate date={updatedDate} />
-          </div>
+        headings.map((heading, i) =>
+          <a href={`#${heading.slug}`} class={i === 0 ? 'active' : ''}>
+            {heading.text}
+          </a>
         )
       }
     </div>
-    <h1 class="post-title">{title}</h1>
-
-    <hr />
   </div>
-
-  <!-- <CONTENT> -->
-  <slot />
-  <!-- </CONTENT> -->
 
 </article>
