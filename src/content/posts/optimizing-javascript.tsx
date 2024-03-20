@@ -32,6 +32,7 @@ export function Benchmark({ id, iterations = 1, results }: {
   const testCase = useRef('')
   const setup = useRef('')
   const [isRunning, setRunning] = useState(false)
+  const [shown, setShown] = useState(false)
   const [progress, setProgress] = useState(-1)
   const [blocks, setBlocks] = useState(() => {
     if (typeof document === 'undefined') return []
@@ -69,8 +70,13 @@ export function Benchmark({ id, iterations = 1, results }: {
   }
 
   const runTests = async () => {
+    blocks.forEach(b => {
+      b.result.percent = 0
+    })
+
     setProgress(0)
     setRunning(true)
+    setBlocks([...blocks])
 
     blocks.forEach(b => {
       const code = `${setup.current}; (function(){${b.code};${testCase.current}})`
@@ -119,6 +125,7 @@ export function Benchmark({ id, iterations = 1, results }: {
     }
 
     setProgress(0)
+    setShown(true)
     setRunning(false)
     setBlocks([...blocks])
 
@@ -139,18 +146,25 @@ export function Benchmark({ id, iterations = 1, results }: {
           <>
             <div><b>{b.id}:</b></div>
             <div className='grid place-items-center'>
-              <div className='relative rounded-xl bg-blue-900/50 overflow-hidden text-center font-bold h-6 p-0 text-sm w-full'>
-                <div className='bg-blue-500 absolute top-0 left-0 h-full' style={{ width: `${b.result.percent}%` }} />
-                <span className='absolute top-0.5 m-auto left-0 right-0'>{b.result.percent}%</span>
+              <div className='relative rounded-lg bg-blue-300/10 overflow-hidden text-center font-bold h-6 p-0 text-sm w-full'>
+                <div className='bg-blue-500/80 absolute top-0 left-0 h-full transition-all' style={{ width: `${shown ? b.result.percent : 0}%` }} />
+                <span className='absolute top-0.5 m-auto left-0 right-0'>{shown ? b.result.percent : 0}%</span>
               </div>
             </div>
           </>
         )}
       </div>
       <div>
-        <button className='w-20' disabled={isRunning} onClick={runTests}>
-          {isRunning ? `${progress}%` : 'Run'}
-        </button>
+        { results !== undefined && !shown &&
+          <button className='w-20' onClick={() => setShown(true)}>
+            Show
+          </button>
+        }
+        { results === undefined || shown &&
+          <button className='w-20' disabled={isRunning} onClick={runTests}>
+            {isRunning ? `${progress}%` : 'Run'}
+          </button>
+        }
       </div>
     </div>
   )
