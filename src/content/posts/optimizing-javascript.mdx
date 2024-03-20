@@ -686,11 +686,11 @@ Various remarks about devtools and profilers.
 
 ### 9.1
 
-If you're profiling in the browser, make sure you use a clean and empty browser profile. I even use a separate browser for this. If you're profiling with your own profile and have browser extensions enabled, they can mess up the measurements. React devtools in particular will substantially affect results, your rendering code may appear longer than it appears to your users.
+If you're profiling in the browser, make sure you use a clean and empty browser profile. I even use a separate browser for this. If you're profiling with your own profile and have browser extensions enabled, they can mess up the measurements. React devtools in particular will substantially affect results, rendering code may appear slower than it appears ~in the mirror~ to your users.
 
 ### 9.2
 
-Browser profiling tools are sample-based profilers, which takes a sample of your stack at regular intervals. This had a big disadvantage: very small but frequent functions might be called between those samples, and might be very much underreported in the stack charts you'll get. Use Firefox devtools with a custom sample interval, or Chrome devtools with CPU throttling.
+Browser profiling tools are sample-based profilers, which take a sample of your stack at regular intervals. This had a big disadvantage: very small but frequent functions might be called between those samples, and might be very much underreported in the stack charts you'll get. Use Firefox devtools with a custom sample interval or Chrome devtools with CPU throttling to avoid this issue.
 
 ### 9.3
 
