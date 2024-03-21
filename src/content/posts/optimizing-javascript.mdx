@@ -159,10 +159,12 @@ for (let i = 0; i < 1000000; i++) {
   client:load
 />
 
-<br />
+#### What the eff should I do about this?
 
-<Aside title="Terminology across JS engines">
-I have used the word "shape" for this concept, but be aware that you may also find *"hidden class"* or *"map"* used to describe the same concept, depending on the engine.
+Easier said than done but: **create all your objects with the exact same shape**. Even just inverting two fields destroys your performance. For example, here are [simple cases](https://github.com/facebook/react/pull/28569) I <mark title="see section 10 for how">found</mark> in React's codebase, but they already had a [much higher impact case](https://v8.dev/blog/react-cliff) of the same problem a few years ago.
+
+<Aside title="A note on terminology">
+I have used the word "shape" for this concept, but be aware that you may also find *"hidden class"* or *"map"* used to describe it, depending on the engine.
 </Aside>
 
 ## 3. Avoid array/object methods
@@ -288,7 +290,7 @@ for (let _ = 0, i = 0; i < 100_000; i++) { _ += x }
 
 <div id="benchmark-object" class="code-blocks">
 
-I also wanted to showcase accessing a deeply nested object vs direct access, but engines are very good at [optimizing away object accesses via escape analysis](https://youtu.be/KiWEWLwQ3oI?t=1055) when there is a hot loop and a constant object. I had to insert a bit of indirection to prevent it.
+I also wanted to showcase accessing a deeply nested object vs direct access, but engines are very good at [optimizing away object accesses via escape analysis](https://youtu.be/KiWEWLwQ3oI?t=1055) when there is a hot loop and a constant object. I inserted a bit of indirection to prevent it.
 
 ```javascript
 // 1. nested access
