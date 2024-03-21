@@ -252,7 +252,7 @@ function Component({ point, getX }) {
 }
 ```
 
-The proxy benchmark is particularly brutal on V8 at the moment:
+The proxy benchmark is particularly brutal on V8 at the moment. Last time I checked, proxy objects were always falling back from the JIT tiers to the interpreter, seeing from those results it might still be the case.
 
 <div id="benchmark-proxy" class="code-blocks">
 
@@ -262,9 +262,7 @@ The proxy benchmark is particularly brutal on V8 at the moment:
 const point = new Proxy({ x: 10, y: 20 }, { get: (t, k) => t[k] })
 
 let result = 0
-for (let i = 0; i < 100000; i++) {
-  result = result + point.x
-}
+for (let i = 0; i < 100_000; i++) { result = result + point.x }
 ```
 
 ```javascript
@@ -273,9 +271,7 @@ const point = { x: 10, y: 20 }
 const x = point.x
 
 let result = 0
-for (let i = 0; i < 100000; i++) {
-  result = result + x
-}
+for (let i = 0; i < 100_000; i++) { result = result + x }
 ```
 
 </div>
@@ -297,9 +293,8 @@ const b = { state: { center: { point: { x: 10, y: 20 } } } }
 const get = (i) => i % 2 ? a : b
 
 let result = 0
-for (let i = 0; i < 100000; i++) {
-  result = result + get(i).state.center.point.x
-}
+for (let i = 0; i < 100_000; i++) {
+  result = result + get(i).state.center.point.x }
 ```
 
 ```javascript
@@ -309,9 +304,8 @@ const b = { x: 10, y: 20 }.x
 const get = (i) => i % 2 ? a : b
 
 let result = 0
-for (let i = 0; i < 100000; i++) {
-  result = result + get(i)
-}
+for (let i = 0; i < 100_000; i++) {
+  result = result + get(i) }
 ```
 
 </div>

@@ -363,6 +363,8 @@ figure > pre {
   border-radius: 5px;
   border: 1px solid var(--color-border);
   background-color: var(--color-panel-bg) !important;
+
+  overflow-x: auto;
 }
 .astro-code > code,
 figure > pre > code {
