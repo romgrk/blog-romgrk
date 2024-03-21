@@ -43,7 +43,7 @@ export function Glorb({ children }) {
 }
 ```
 
-The only solution left at this point for you poor dev is to jump to the definition of each of those components to try to make sense if any of them does something funky, before you work further on whatever you need to fix. In other words, you have no guarantees about what's going on in that first snippet. You can't make assumptions about what those components are.
+The only solution left at this point for you is to jump to the definition of each of those components to try to make sense if any of them does something funky, before you work further on whatever you need to fix. In other words, you have no guarantees about what's going on in that first snippet. You can't make assumptions about what those components are.
 
 Besides, the JSX tag name is not a natural place to encode styling. The tag name for elements has always been for the logic & behavior it encodes, be it a `div`, `button`, `input` or even custom ones like `Combobox` or `DatePicker`. You're going to be able to tell from the name right away what behavior it encapsulates. So what is the best place to encode styling, you ask me? The same place that we've been using for decades: `class(Name)` and `style`.
 
