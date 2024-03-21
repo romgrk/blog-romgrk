@@ -4,11 +4,14 @@ import { SITE_TITLE } from '../consts';
 ---
 
 <header class="header">
-  <a class="header-title" href="/">{SITE_TITLE}</a>
+  <a class="header-title" href="/">
+    <span class="inline md:hidden">{SITE_TITLE.charAt(0).toUpperCase()}</span>
+    <span class="hidden md:inline">{SITE_TITLE}</span>
+  </a>
 
   <div class="header-links">
     <HeaderLink href="/posts">Posts</HeaderLink>
-    <HeaderLink href="/castle">The Castle, by H. Wenng</HeaderLink>
+    <HeaderLink href="/castle">The Castle<span class="hidden md:inline">, by H. Wenng</span></HeaderLink>
   </div>
   <div class="header-fill"></div>
   <a class="header-github" href="https://github.com/romgrk" target="_blank">
@@ -42,7 +45,8 @@ import { SITE_TITLE } from '../consts';
   .header-title {
     font-size: 1.1em;
     font-weight: 700;
-    margin-right: 1.5em;
+    @apply mr-1;
+    @apply md:mr-4;
   }
 
   .header-links {

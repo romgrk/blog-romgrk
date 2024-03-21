@@ -140,11 +140,11 @@ export function Benchmark({ id, iterations = 1, results }: {
   }
 
   return (
-    <div className='flex flex-row gap-4 mb-2'>
-      <div className={cx('flex-1 mb-1 grid grid-cols-[200px_auto]', isRunning && 'opacity-50')}>
+    <div className='flex md:flex-row flex-col gap-4 mb-2'>
+      <div className={cx('flex-1 mb-1 grid grid-cols-[auto_auto]', isRunning && 'opacity-50')}>
         {blocks.map((b) =>
           <>
-            <div><b>{b.id}:</b></div>
+            <div className='w-max-content'><b>{b.id}:</b></div>
             <div className='grid place-items-center'>
               <div className='relative rounded-lg bg-blue-300/10 overflow-hidden text-center font-bold h-6 p-0 text-sm w-full'>
                 <div className='bg-blue-500/80 absolute top-0 left-0 h-full transition-all' style={{ width: `${shown ? b.result.percent : 0}%` }} />
