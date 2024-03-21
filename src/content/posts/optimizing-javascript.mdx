@@ -252,7 +252,7 @@ function Component({ point, getX }) {
 }
 ```
 
-The proxy benchmark is particularly brutal on V8 at the moment. Last time I checked, proxy objects were always falling back from the JIT tiers to the interpreter, seeing from those results it might still be the case.
+The proxy benchmark is particularly brutal on V8 at the moment. Last time I checked, proxy objects were always falling back from the JIT to the interpreter, seeing from those results it might still be the case.
 
 <div id="benchmark-proxy" class="code-blocks">
 
@@ -470,7 +470,7 @@ For more details on CPU and memory, [see this link](https://www.akkadia.org/drep
 
 ## 6. Avoid large objects
 
-As explained in section 2, engines use shapes to optimize objects. However, when the shape grows too large, the engine has no choice but to use a regular hashmap (like a `Map` object). And as we saw in section 5, caches misses decrease performance significantly. Hashmaps are prone to this because their data is usually randomly & evenly distributed over the memory region they occupy. Let's see how it behaves with this map of some users indexed by their ID.
+As explained in section 2, engines use shapes to optimize objects. However, when the shape grows too large, the engine has no choice but to use a regular hashmap (like a `Map` object). And as we saw in section 5, cache misses decrease performance significantly. Hashmaps are prone to this because their data is usually randomly & evenly distributed over the memory region they occupy. Let's see how it behaves with this map of some users indexed by their ID.
 
 <div id="benchmark-large-object" class="code-blocks">
 
