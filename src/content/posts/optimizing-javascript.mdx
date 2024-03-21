@@ -201,8 +201,8 @@ Easier said than done but: **create all your objects with the exact same shape**
 
 For example, here are [simple cases](https://github.com/facebook/react/pull/28569) I found in React's codebase, but they already had a [much higher impact case](https://v8.dev/blog/react-cliff) of the same problem a few years ago because they were initializing an object with an integer, then later storing a float. Yes, changing the type also changes the shape. Yes, there are integer and double types hidden behind `number`.
 
-<Aside title="String and number representation">
- Engines can usually encode integers as values. For example, V8 represents integers as compact [Smi](https://medium.com/fhinkel/v8-internals-how-small-is-a-small-integer-e0badc18b6da) (SMall Integer) values, and JSC uses [double tagging](https://ktln2.org/2020/08/25/javascriptcore/) to pass numbers by value, as SpiderMonkey does.
+<Aside title="Number representation">
+ Engines can usually encode integers as values. For example, V8 represents integers as compact [Smi](https://medium.com/fhinkel/v8-internals-how-small-is-a-small-integer-e0badc18b6da) (SMall Integer) values, and JSC uses [double tagging](https://ktln2.org/2020/08/25/javascriptcore/) to pass numbers by value, as SpiderMonkey does. The rest is passed as pointers to more complex representations.
 </Aside>
 
 
