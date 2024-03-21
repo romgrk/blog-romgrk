@@ -10,7 +10,7 @@ import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
 import { Benchmark } from './optimizing-javascript.tsx'
 
 
-I often feel like javascript code in general runs much slower than it could, simply because it's not optimized properly. Here is a summary of common optimization techniques I've found useful. Note that the tradeoff for performance is often readability, so the question of when to go for performance versus readability is a question left to the reader. I'll also note that talking about optimization necessarily requires talking about benchmarking. Micro-optimizing a function for hours to have it run 100x faster is meaningless if the function only represented 0.1% of the actual overall runtime to start with. If one is optimizing a codebase, the first and most important step is benchmarking. I'll cover the topic in the later points.
+I often feel like javascript code in general runs much slower than it could, simply because it's not optimized properly. Here is a summary of common optimization techniques I've found useful. Note that the tradeoff for performance is often readability, so the question of when to go for performance versus readability is a question left to the reader. I'll also note that talking about optimization necessarily requires talking about benchmarking. Micro-optimizing a function for hours to have it run 100x faster is meaningless if the function only represented a fraction of the actual overall runtime to start with. If one is optimizing, the first and most important step is benchmarking. I'll cover the topic in the later points.
 
 I have included runnable examples for all cases where it's possible. They show by default the results I got on my machine (brave 122 on archlinux) but you can run them yourself. As much as I hate to say it, Firefox/SpiderMonkey has fallen a bit behind in the optimization game, and represents a very small fraction of the traffic, so I don't recommend using the results you'd get on Firefox as useful indicators.
 
@@ -101,35 +101,40 @@ function add(a, b) {
 }
 ```
 
-If one would instead pass an object not with the shape `{ x, y }` but with the shape `{ y, x }`, the engine would need to undo its speculation and the function would suddenly become considerably slower. I'm going to limit my explanation here because you should read  the [excellent post from mraleph](https://mrale.ph/blog/2015/01/11/whats-up-with-monomorphism.html) if you want more details, but I'm going to highlight that V8 in particular has 3 modes, for functions that are: monomorphic (1 shape), polymorphic (2-4 shapes), and megamorphic (5+ shapes). Let's say you *really* want to stay monomorphic, because the slowdown is drastic:
+If one would instead pass an object not with the shape `{ x, y }` but with the shape `{ y, x }`, the engine would need to undo its speculation and the function would suddenly become considerably slower. I'm going to limit my explanation here because you should read  the [excellent post from mraleph](https://mrale.ph/blog/2015/01/11/whats-up-with-monomorphism.html) if you want more details, but I'm going to highlight that V8 in particular has 3 modes, for accesses that are: monomorphic (1 shape), polymorphic (2-4 shapes), and megamorphic (5+ shapes). Let's say you *really* want to stay monomorphic, because the slowdown is drastic:
 
 <div id="benchmark-shape" class="code-blocks">
 
 ```javascript
+// setup
+let _ = 0
+```
+
+```javascript
 // 1. monomorphic
-const o1 = { a: 4, b: 0, c: 0, d: 0, e: 0 } // all the same shape
-const o2 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
-const o3 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
-const o4 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
-const o5 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
+const o1 = { a: 1, b: _, c: _, d: _, e: _ }
+const o2 = { a: 1, b: _, c: _, d: _, e: _ }
+const o3 = { a: 1, b: _, c: _, d: _, e: _ }
+const o4 = { a: 1, b: _, c: _, d: _, e: _ }
+const o5 = { a: 1, b: _, c: _, d: _, e: _ } // all shapes are equal
 ```
 
 ```javascript
 // 2. polymorphic
-const o1 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
-const o2 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
-const o3 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
-const o4 = { a: 4, b: 0, c: 0, d: 0, e: 0 }
-const o5 = { b: 0, a: 4, c: 0, d: 0, e: 0 } // "a" and "b" reversed
+const o1 = { a: 1, b: _, c: _, d: _, e: _ }
+const o2 = { a: 1, b: _, c: _, d: _, e: _ }
+const o3 = { a: 1, b: _, c: _, d: _, e: _ }
+const o4 = { a: 1, b: _, c: _, d: _, e: _ }
+const o5 = { b: _, a: 1, c: _, d: _, e: _ } // this shape is different
 ```
 
 ```javascript
 // 3. megamorphic
-const o1 = { a: 4, b: 0, c: 0, d: 0, e: 0 } // "a" in 1st key
-const o2 = { b: 0, a: 4, c: 0, d: 0, e: 0 } // "a" in 2nd key
-const o3 = { b: 0, c: 0, a: 4, d: 0, e: 0 } // "a" in 3rd key
-const o4 = { b: 0, c: 0, d: 0, a: 4, e: 0 } // "a" in 4th key
-const o5 = { b: 0, c: 0, d: 0, e: 0, a: 4 } // "a" in 5th key
+const o1 = { a: 1, b: _, c: _, d: _, e: _ }
+const o2 = { b: _, a: 1, c: _, d: _, e: _ }
+const o3 = { b: _, c: _, a: 1, d: _, e: _ }
+const o4 = { b: _, c: _, d: _, a: 1, e: _ }
+const o5 = { b: _, c: _, d: _, e: _, a: 1 } // all shapes are different
 ```
 
 ```javascript
