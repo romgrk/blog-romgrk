@@ -16,11 +16,18 @@ const { type = 'info', title } = Astro.props;
   flex-direction: row;
   align-items: center;
 }
+.aside h6 {
+  @apply text-neutral-400;
+}
 .aside svg {
   @apply mr-4;
 }
-.aside p {
-  padding: 0;
+.aside p,
+.aside pre {
+  margin-bottom: 1rem;
+}
+.aside p:last-child,
+.aside pre:last-child {
   margin: 0;
 }
 </style>

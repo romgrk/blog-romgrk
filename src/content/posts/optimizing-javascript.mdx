@@ -10,9 +10,9 @@ import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
 import { Benchmark } from './optimizing-javascript.tsx'
 
 
-I often feel like javascript code in general runs much slower than it could, simply because it's not optimized properly. Here is a summary of common optimization techniques I've found useful. Note that the tradeoff for performance is often readability, so the question of when to go for performance versus readability is a question left to the reader. I'll also note that talking about optimization necessarily requires talking about benchmarking. Micro-optimizing a function for hours to have it run 100x faster is meaningless if the function only represented a fraction of the actual overall runtime to start with. If one is optimizing, the first and most important step is benchmarking. I'll cover the topic in the later points.
+I often feel like javascript code in general runs much slower than it could, simply because it's not optimized properly. Here is a summary of common optimization techniques I've found useful. Note that the tradeoff for performance is often readability, so the question of when to go for performance versus readability is a question left to the reader. I'll also note that talking about optimization necessarily requires talking about benchmarking. Micro-optimizing a function for hours to have it run 100x faster is meaningless if the function only represented a fraction of the actual overall runtime to start with. If one is optimizing, the first and most important step is benchmarking. I'll cover the topic in the later points. Be also aware that micro-benchmarks are often flawed, and that may include those presented here. I've done my best to avoid those traps, but don't blindly apply any of the points presented here without benchmarking.
 
-I have included runnable examples for all cases where it's possible. They show by default the results I got on my machine (brave 122 on archlinux) but you can run them yourself. As much as I hate to say it, Firefox/SpiderMonkey has fallen a bit behind in the optimization game, and represents a very small fraction of the traffic, so I don't recommend using the results you'd get on Firefox as useful indicators.
+I have included runnable examples for all cases where it's possible. They show by default the results I got on my machine (brave 122 on archlinux) but you can run them yourself. As much as I hate to say it, Firefox has fallen a bit behind in the optimization game, and represents a very small fraction of the traffic [for now](https://foundation.mozilla.org/en/?form=donate-header), so I don't recommend using the results you'd get on Firefox as useful indicators.
 
 ## 0. Avoid work
 
@@ -20,7 +20,7 @@ This might sound evident, but it needs to be here because there can't be another
 
 ## 1. Avoid string comparisons
 
-Javascript makes it easy to hides the real cost of string comparisons. If you need to compare strings in C, you'd use `strcmp(a, b)`, versus `a == b` for integers. Javascript uses `===` for both, so you don't see the `strcmp`. But it's there, and a string comparison will always require comparing each of the characters in the string one by one; string comparison is `O(n)`. One common javascript pattern to avoid is strings-as-enums. But with the advent of typescript this should be easily avoidable, as
+Javascript makes it easy to hides the real cost of string comparisons. If you need to compare strings in C, you'd use `strcmp(a, b)`, versus `a == b` for integers. Javascript uses `===` for both, so you don't see the `strcmp`. But it's there, and a string comparison will always require comparing each of the characters in the string; string comparison is `O(n)`. One common javascript pattern to avoid is strings-as-enums. But with the advent of typescript this should be easily avoidable, as
 enums are integers by default.
 
 <div class="code-blocks-row">
@@ -54,12 +54,12 @@ const Position = {
   BOTTOM: 'BOTTOM',
 }
 
-let result = 0
+let _ = 0
 for (let i = 0; i < 1000000; i++) {
   let current = i % 2 === 0 ?
     Position.TOP : Position.BOTTOM
   if (current === Position.TOP)
-    result += 1
+    _ += 1
 }
 ```
 
@@ -70,12 +70,12 @@ const Position = {
   BOTTOM: 1,
 }
 
-let result = 0
+let _ = 0
 for (let i = 0; i < 1000000; i++) {
   let current = i % 2 === 0 ?
     Position.TOP : Position.BOTTOM
   if (current === Position.TOP)
-    result += 1
+    _ += 1
 }
 ```
 
@@ -261,8 +261,7 @@ The proxy benchmark is particularly brutal on V8 at the moment. Last time I chec
 // 1. proxy access
 const point = new Proxy({ x: 10, y: 20 }, { get: (t, k) => t[k] })
 
-let result = 0
-for (let i = 0; i < 100_000; i++) { result = result + point.x }
+for (let _ = 0, i = 0; i < 100_000; i++) { _ += point.x }
 ```
 
 ```javascript
@@ -270,8 +269,7 @@ for (let i = 0; i < 100_000; i++) { result = result + point.x }
 const point = { x: 10, y: 20 }
 const x = point.x
 
-let result = 0
-for (let i = 0; i < 100_000; i++) { result = result + x }
+for (let _ = 0, i = 0; i < 100_000; i++) { _ += x }
 ```
 
 </div>
@@ -487,16 +485,17 @@ const byId = {}
 Array.from({ length: USERS_LENGTH }).forEach((_, id) => {
   byId[id] = { id, name: 'John'}
 })
+let _ = 0
 ```
 
 ```javascript
 // 1. [] access
-let _ = 0; Object.keys(byId).forEach(id => { _ += byId[id].id })
+Object.keys(byId).forEach(id => { _ += byId[id].id })
 ```
 
 ```javascript
 // 2. direct access
-let _ = 0; Object.values(byId).forEach(user => { _ += user.id })
+Object.values(byId).forEach(user => { _ += user.id })
 ```
 
 </div>
@@ -524,16 +523,17 @@ const byId = {}
 Array.from({ length: USERS_LENGTH }).forEach((_, id) => {
   byId[id] = { id, name: 'John'}
 })
+let _ = 0
 ```
 
 ```javascript
 // 1. [] access
-let _ = 0; Object.keys(byId).forEach(id => { _ += byId[id].id })
+Object.keys(byId).forEach(id => { _ += byId[id].id })
 ```
 
 ```javascript
 // 2. direct access
-let _ = 0; Object.values(byId).forEach(user => { _ += user.id })
+Object.values(byId).forEach(user => { _ += user.id })
 ```
 
 </div>
