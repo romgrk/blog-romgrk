@@ -169,7 +169,7 @@ I have used the word "shape" for this concept, but be aware that you may also fi
 
 ## 3. Avoid array/object methods
 
-I love functional programming as much as anyone else, but unless you're working in Haskell/OCaml/Rust where functional code gets compiled to efficient machine code, functional code will probably always be slower than imperative code.
+I love functional programming as much as anyone else, but unless you're working in Haskell/OCaml/Rust where functional code gets compiled to efficient machine code, functional will always be slower than imperative.
 
 ```javascript
 const result =
@@ -181,7 +181,7 @@ const result =
 
 The problem with those methods is that:
 
-  1. They need to make a full copy of the array, and those copies later need to be freed by the garbage collector. We will explore more in details the issues of memory accesses in section 5.
+  1. They need to make a full copy of the array, and those copies later need to be freed by the garbage collector.  We will explore more in details the issues of memory I/O in section 5.
   2. They loop N times for N operations, whereas a `for` loop would allow looping once.
 
 
