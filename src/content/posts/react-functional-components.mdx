@@ -2,6 +2,7 @@
 title: 'The problem with functional components'
 description: 'romgrk ranting about the deprecation of class components'
 pubDate: 'Oct 6 2023'
+sidebar: { display: false }
 ---
 import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
 import { ExampleStack, ExamplePerformance } from '../../components/client/posts/react-functional-components.tsx'
@@ -13,7 +14,7 @@ Before going further, let's establish one thing: closures and classes are two wa
 
 Let's look at an example. Below we have equivalent drafts for a `Selector` component in functional and class versions.
 
-<div class="row mb-1">
+<div class="code-blocks-row mb-1">
 
 ```tsx
 class Selector extends Component {
@@ -53,10 +54,14 @@ function Selector(props) {
   const position = useRef({ x: 0, y: 0 })
 
   // state
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [disabled, setDisabled] = useState(false)
-  const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [open, setOpen] =
+    useState(false)
+  const [loading, setLoading] =
+    useState(false)
+  const [disabled, setDisabled] =
+    useState(false)
+  const [selectedIndex, setSelectedIndex] =
+    useState(-1)
 
   // methods
   const open = useCallback(() => {}, [])

@@ -2,11 +2,13 @@
 import type { CollectionEntry } from 'astro:content';
 import FormattedDate from './FormattedDate.astro';
 
-const {
-  title, description, pubDate, updatedDate, heroImage,
-  sidebar,
-  headings,
-} = Astro.props;
+const DEFAULT_SIDEBAR = {
+  display: true,
+  depth: 6,
+}
+
+const { title, description, pubDate, updatedDate, heroImage, headings } = Astro.props;
+const sidebar = Object.assign({}, DEFAULT_SIDEBAR, Astro.props.sidebar)
 
 ---
 
@@ -80,9 +82,11 @@ const {
   }
 </style>
 
-<script define:vars={{ MAX_DEPTH: sidebar?.depth ?? 6 }}>
+<script define:vars={{ DISPLAY: sidebar.display, MAX_DEPTH: sidebar.depth }}>
 
 document.addEventListener('DOMContentLoaded', () => {
+  if (!DISPLAY) return
+
   const html = document.querySelector('html')
   const sidebar = document.querySelector('.post-sidebar')
   const headings =
@@ -143,17 +147,19 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <div class="post-sidebar">
-    <div class="post-sidebar-content">
-      {
-        headings.map((heading, i) =>
-          sidebar?.depth && sidebar.depth < heading.depth ?
-            null :
-            <a href={`#${heading.slug}`}>
-              {heading.text}
-            </a>
-        )
-      }
-    </div>
+    {sidebar.display &&
+      <div class="post-sidebar-content">
+        {
+          headings.map((heading, i) =>
+            sidebar?.depth && sidebar.depth < heading.depth ?
+              null :
+              <a href={`#${heading.slug}`}>
+                {heading.text}
+              </a>
+          )
+        }
+      </div>
+    }
   </div>
 
 </article>

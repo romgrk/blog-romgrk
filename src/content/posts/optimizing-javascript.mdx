@@ -16,7 +16,7 @@ I have included runnable examples for all cases where it's possible. They show b
 
 ## 0. Avoid work
 
-This might sound evident, but it needs to be here because there can't be another first step to optimization: if you're trying to optimize, you should first look into avoiding work.
+This might sound evident, but it needs to be here because there can't be another first step to optimization: if you're trying to optimize, you should first look into avoiding work. This includes concepts like memoization, laziness and incremental computation. This would be applied differently depending on the context. In React for example, that would mean applying `memo()`, `useMemo()` and other applicable primitives.
 
 ## 1. Avoid string comparisons
 
@@ -158,6 +158,12 @@ for (let i = 0; i < 1000000; i++) {
   results={{"1. monomorphic":{"runTime":-1000,"amountOfRounds":1247,"percent":100},"2. polymorphic":{"runTime":-1003,"amountOfRounds":163,"percent":13.07},"3. megamorphic":{"runTime":-1008,"amountOfRounds":51,"percent":4.09}}}
   client:load
 />
+
+<br />
+
+<Aside title="Terminology across JS engines">
+I have used the word "shape" for this concept, but be aware that you may also find *"hidden class"* or *"map"* used to describe the same concept, depending on the engine.
+</Aside>
 
 ## 3. Avoid array/object methods
 
@@ -393,7 +399,8 @@ const points = [{ x: 0, y: 5 }, { x: 0, y: 10 }]
 const points = new Int64Array([0, 5, 0, 10])
 ```
 
-For a more detailed example, [see this link](https://mrale.ph/blog/2018/02/03/maybe-you-dont-need-rust-to-speed-up-your-js.html#optimizing-parsing---reducing-gc-pressure).
+For a more detailed example, [see this link](https://mrale.ph/blog/2018/02/03/maybe-you-dont-need-rust-to-speed-up-your-js.html#optimizing-parsing---reducing-gc-pressure)* .  
+<small>*Note that it contains some optimizations that are now outdated, but it's still accurate overall.</small>
 
 ### 5.2 Caching in L1/2/3
 
@@ -603,13 +610,13 @@ createMessages(key, values)
 Obviously the usual warnings about `eval()` apply: don't trust user input, sanitize anything that gets passed into the `eval()`'d code, and don't create any XSS possibility. Also note that some environments don't allow access to `eval()`, such as browser pages with a CSP.
 
 
-## 8. Use strings carefully
+## 8. Use strings, carefully
 
-We've already seen above how strings are more expensive than they appear. Well I have kind of a good news/bad news situation here, which I'll announce in the only logical order (bad first, good second). Strings are more complex than they appear. But they can also be quite efficient in some situations.
+We've already seen above how strings are more expensive than they appear. Well I have kind of a good news/bad news situation here, which I'll announce in the only logical order (bad first, good second): strings are more complex than they appear, but they can also be quite efficient used well.
 
 String operations are a core part of javascript due to its context. To optimize string-heavy code, engines had to be creative. And by that I mean, they had to represent the `String` object with multiple string representation in C++, depending on the use case. There are two general cases you should worry about, because they hold true for V8 (the most common engine by far), and generally also in other engines.
 
-First, strings concatenated with `+` don't create a copy of the two input strings. It creates a pointer to each substring. If it was in typescript, it would be something like this:
+First, strings concatenated with `+` don't create a copy of the two input strings. The operation creates a pointer to each substring. If it was in typescript, it would be something like this:
 
 ```typescript
 class String {
@@ -724,14 +731,14 @@ const result =
 
 #### What the eff should I do about this?
 
-There is a lot of complexity to strings across all the engines. I've skimmed very quickly, but there are often minimum lengths for each of those string representations, for example a concatenated string might not be used for very small strings. Or sometimes there are limits, for example avoiding pointing to a substring of a substring. In general, try to **avoid mutation for as long as possible**. This includes methods such as `.trim()`, `.replace()`, etc. In some engines, string templates can also be slower than `+`. In V8 at the moment, it's the case. This is true now, but might not be in the future. The most important thing is: __benchmark__.
+In general, try to **avoid mutation for as long as possible**. This includes methods such as `.trim()`, `.replace()`, etc. Consider how you can avoid those methods. In some engines, string templates can also be slower than `+`. In V8 at the moment, it's the case. It's true now, but might not be in the future so as always, benchmark.
 
-Final note, but one of the implications of the `SlicedString` above is that if a small substring to a very large string is alive in memory, it might prevent the garbage collector from collecting the huge string! This is the case in V8. If you're processing large texts and extracting small strings from it, you might be leaking large amounts of memory.
+A note on `SlicedString` above, you should note that if a small substring to a very large string is alive in memory, <mark title="it will, in V8">it might</mark> prevent the garbage collector from collecting the large string! If you're processing large texts and extracting small strings from it, you might be leaking large amounts of memory.
 
 ```javascript
-const large = Array.from({ length: 10_000 }).map(() => 'string').join('').trim()
-// will keep alive `large`!
-const small = large.slice(10, 15)
+const large = Array.from({ length: 10_000 }).map(() => 'string').join('')
+const small = large.slice(0, 50)
+//    ^ will keep `large` alive
 ```
 
 The solution here is to use mutation methods to our advantage. If we use one of them on `small`, it will force a copy, and the old pointer to `large` will be lost:
@@ -741,13 +748,21 @@ The solution here is to use mutation methods to our advantage. If we use one of 
 const small = small.replace('#'.repeat(small.length + 1), '')
 ```
 
-
 For more details, see [string.h on V8](https://github.com/v8/v8/blob/main/src/objects/string.h) or [JSString.h on JavaScriptCore](https://github.com/WebKit/WebKit/blob/main/Source/JavaScriptCore/runtime/JSString.h).
+
+<Aside title="On strings complexity">
+  I have skimmed very quickly over things, but there are a lot of implementation details that add complexity to strings. There are often minimum lengths for each of those string representations. For example a concatenated string might not be used for very small strings. Or sometimes there are limits, for example avoiding pointing to a substring of a substring. Reading the C++ files linked above gives a good overview of the implementation details, even if just reading the comments.
+</Aside>
 
 
 ## 9. Benchmarking
 
 I'll list the common things to think about when benchmarking:
+
+### 9.0 Benchmark-optimize loop
+
+You should always 1. benchmark, then 2. optimize the highest entry on the list that hasn't been fully optimized, then 3. goto 1.
+
 
 ### 9.1 Avoid micro-benchmarks
 
@@ -778,19 +793,29 @@ Different engines will optimize certain patterns better or worst than others. Yo
 
 ## 10. Profiling
 
-Various remarks about devtools and profilers.
+Various remarks about profiling and devtools.
 
-### 10.1
+### 10.1 Browser gotchas
 
 If you're profiling in the browser, make sure you use a clean and empty browser profile. I even use a separate browser for this. If you're profiling with your own profile and have browser extensions enabled, they can mess up the measurements. React devtools in particular will substantially affect results, rendering code may appear slower than it appears ~in the mirror~ to your users.
 
-### 10.2
+### 10.2 Sample vs structural profiling
 
-Browser profiling tools are sample-based profilers, which take a sample of your stack at regular intervals. This had a big disadvantage: very small but frequent functions might be called between those samples, and might be very much underreported in the stack charts you'll get. Use Firefox devtools with a custom sample interval or Chrome devtools with CPU throttling to avoid this issue.
+Browser profiling tools are sample-based profilers, which take a sample of your stack at regular intervals. This had a big disadvantage: very small but very frequent functions might be called between those samples, and might be very much underreported in the stack charts you'll get. Use Firefox devtools with a custom sample interval or Chrome devtools with CPU throttling to avoid this issue.
 
-### 10.3
+### 10.3 The tools of the trade
 
-Keep up with devtools, each of them have particular features than can be useful, for example: https://github.com/iamakulov/devtools-perf-features
+Beyond the regular browser devtools, it may help to be aware of these options:
+
+- Chrome devtools have quite a few experimental flag that can help you figure out why things are slow. The style invalidation tracker is invaluable when you need to debug style/layout recalculations in the browser.  
+  https://github.com/iamakulov/devtools-perf-features
+
+- The deoptexplorer-vscode extension allows you to load V8/chromium log files to understand when your code is triggering deoptimizations, such as when you pass different shapes to a function.  
+ https://github.com/microsoft/deoptexplorer-vscode
+
+- You can always compile the debug shell for each JS engine to understand more in details how it works. This allows you to run `perf` and other low-level tools, and also to inspect the bytecode and machine code generated by each engine.  
+ [Example for V8](https://mrale.ph/blog/2018/02/03/maybe-you-dont-need-rust-to-speed-up-your-js.html#getting-the-code) | [Example for JSC](https://zon8.re/posts/jsc-internals-part1-tracing-js-source-to-bytecode/) | <span class="text-neutral-500">Example for SpiderMonkey (missing)</span>
+
 
 ## Final notes
 

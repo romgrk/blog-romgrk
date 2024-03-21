@@ -395,9 +395,11 @@ figure > pre > code {
   .code-blocks-row {
     display: flex;
     flex-direction: row;
+    overflow: hidden;
   }
   .code-blocks-row > * {
     flex: 1;
+    overflow: hidden;
   }
   .code-blocks-row > *:not(:last-child) {
     margin-right: var(--gap, 0);
