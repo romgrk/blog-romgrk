@@ -1,0 +1,20 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import Content from './content.mdx';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <BaseHead />
+  </head>
+  <body>
+    <Header />
+    <main class="links post-body">
+      <Content />
+    </main>
+    <Footer />
+  </body>
+</html>
