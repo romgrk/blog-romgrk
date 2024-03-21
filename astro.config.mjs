@@ -5,40 +5,34 @@ import react from '@astrojs/react';
 import netlify from '@astrojs/netlify/functions';
 import tailwind from '@astrojs/tailwind';
 import rehypePrettyCode from 'rehype-pretty-code';
-
+import icon from "astro-icon";
 const prettyCodeOptions = {
   theme: 'github-dark-dimmed',
   onVisitLine(node) {
     if (node.children.length === 0) {
-      node.children = [
-        {
-          type: 'text',
-          value: ' ',
-        },
-      ];
+      node.children = [{
+        type: 'text',
+        value: ' '
+      }];
     }
   },
   onVisitHighlightedLine(node) {
-    node.properties.className ??= []
+    node.properties.className ??= [];
     node.properties.className.push('code-highlighted-line');
   },
   onVisitHighlightedWord(node) {
     node.properties.className = ['code-highlighted-word'];
   },
-  tokensMap: {},
+  tokensMap: {}
 };
+
 
 // https://astro.build/config
 export default defineConfig({
   site: 'https://romgrk.com',
-  integrations: [
-    mdx(),
-    sitemap(),
-    react(),
-    tailwind({
-      applyBaseStyles: false,
-    })
-  ],
+  integrations: [icon(), mdx(), sitemap(), react(), tailwind({
+    applyBaseStyles: false
+  })],
   markdown: {
     shikiConfig: {
       // Choose from Shiki's built-in themes (or add your own)
@@ -53,7 +47,7 @@ export default defineConfig({
     },
     extendDefaultPlugins: true,
     syntaxHighlight: false,
-    rehypePlugins: [[rehypePrettyCode, prettyCodeOptions]],
+    rehypePlugins: [[rehypePrettyCode, prettyCodeOptions]]
   },
   output: 'server',
   adapter: netlify()

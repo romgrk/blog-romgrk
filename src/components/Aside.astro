@@ -1,0 +1,31 @@
+---
+import { Icon } from 'astro-icon/components'
+const { type = 'info', title } = Astro.props;
+---
+<style is:global>
+.aside {
+  @apply p-4;
+  @apply rounded-lg;
+  @apply border;
+  @apply border-neutral-500;
+  @apply bg-neutral-300/5;
+  margin-bottom: 2rem;
+}
+.aside h6 {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.aside svg {
+  @apply mr-4;
+}
+.aside p {
+  padding: 0;
+  margin: 0;
+}
+</style>
+
+<aside class={`aside aside-${type}`}>
+  <h6><Icon name='octicon:info-16' /><span>{title}</span></h6>
+  <slot />
+</aside>

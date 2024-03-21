@@ -5,6 +5,7 @@ pubDate: 'Mar 20 2024'
 draft: true
 sidebar: { depth: 2 }
 ---
+import Aside from '../../components/Aside.astro'
 import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
 import { Benchmark } from './optimizing-javascript.tsx'
 
@@ -92,7 +93,7 @@ In string heavy code, this can have a huge impact. For example, I was able to [m
 
 ## 2. Avoid different shapes
 
-Javascript engines try to optimize their code by assuming that javascript objects have a specific shape, and that functions will receive objects of the same shape. For example, at runtime if the following function receives two objects with the shape `{ x: number, y: number }`, the engine is going to assume that future objects will have the same shape, and generate machine code optimized for that shape.
+Javascript engines try to optimize code by assuming that objects have a specific shape, and that functions will receive objects of the same shape. This allows them to store the keys of the shape in one table common for all objects of that shape, and the values in a flat array. For example, at runtime if the following function receives two objects with the shape `{ x: number, y: number }`, the engine is going to speculate that future objects will have the same shape, and generate machine code optimized for that shape.
 
 ```javascript
 function add(a, b) {
@@ -100,7 +101,7 @@ function add(a, b) {
 }
 ```
 
-If one would instead pass an object not with the shape `{ x, y }` but with the shape `{ y, x }`, the engine would need to undo its optimization and the function would suddenly become considerably slower. I'm going to limit my explanation here because you should read  the [excellent post from mraleph](https://mrale.ph/blog/2015/01/11/whats-up-with-monomorphism.html) if you want more details, but I'm going to highlight that V8 in particular has 3 modes, for functions that are: monomorphic (1 shape), polymorphic (2-4 shapes), and megamorphic (5+ shapes). Let's say you *really* want to stay monomorphic, because the slowdown is drastic:
+If one would instead pass an object not with the shape `{ x, y }` but with the shape `{ y, x }`, the engine would need to undo its speculation and the function would suddenly become considerably slower. I'm going to limit my explanation here because you should read  the [excellent post from mraleph](https://mrale.ph/blog/2015/01/11/whats-up-with-monomorphism.html) if you want more details, but I'm going to highlight that V8 in particular has 3 modes, for functions that are: monomorphic (1 shape), polymorphic (2-4 shapes), and megamorphic (5+ shapes). Let's say you *really* want to stay monomorphic, because the slowdown is drastic:
 
 <div id="benchmark-shape" class="code-blocks">
 
@@ -454,9 +455,17 @@ let r = 0; for (let i = 0; i < 100000; i++) { r += buffer[random(RAM)] }
 
 #### What the eff should I do about this?
 
-Ruthlessly eliminate every single data or memory allocations that can be eliminated. The smaller your dataset is, the faster your program will run. Memory I/O is the bottleneck for 99% of programs. Another good strategy can be to split your work into chunks, and ensure you work on a small dataset at a time.
+**Ruthlessly eliminate every single data or memory allocations** that can be eliminated. The smaller your dataset is, the faster your program will run. Memory I/O is the bottleneck for 95% of programs. Another good strategy can be to split your work into chunks, and ensure you work on a small dataset at a time.
 
 For more details on CPU and memory, [see this link](https://www.akkadia.org/drepper/cpumemory.pdf).
+
+<Aside title="About immutable data structures">
+  Immutability is great for clarity and correctness, but in the context of performance, updating an immutable data structure means making a copy of the container, and that's more memory I/O that will flush your caches. You should avoid immutable data structures when possible.
+</Aside>
+
+<Aside title="About the { ...spread } operator ">
+  It's very convenient, but every time you use it you create a new object in memory. More memory I/O, slower caches!
+</Aside>
 
 <br />
 <RandomPlant />
@@ -464,7 +473,7 @@ For more details on CPU and memory, [see this link](https://www.akkadia.org/drep
 
 ## 6. Avoid large objects
 
-I'm not going to explain much here as most of this is already explained by sections 4 and 5. But you should know that engines represent small objects as "shapes", as we've seen in section 2. However, when the shape grows too large, the engine has no choice but to use a regular hashmap (same principle as `Map`). Let's see how it behaves with this map of some users indexed by their ID.
+As explained in section 2, engines use shapes to optimize objects. However, when the shape grows too large, the engine has no choice but to use a regular hashmap (like a `Map` object). And as we saw in section 5, caches misses decrease performance significantly. Hashmaps are prone to this because their data is usually randomly & evenly distributed over the memory region they occupy. Let's see how it behaves with this map of some users indexed by their ID.
 
 <div id="benchmark-large-object" class="code-blocks">
 
@@ -499,7 +508,7 @@ let _ = 0; Object.values(byId).forEach(user => { _ += user.id })
   client:load
 />
 
-I tested the case above with a reasonable 1,000 entries object, but the performance keeps degrading as the size of the object grows:
+And we can also observe how the performance keeps degrading as the object size grows:
 
 <div id="benchmark-large-object-larger" class="code-blocks">
 
@@ -540,7 +549,7 @@ let _ = 0; Object.values(byId).forEach(user => { _ += user.id })
 
 #### What the eff should I do about this?
 
-As demonstrated above, avoid having to frequently index into the object. Prefer turning the object into an array beforehand. Organize your data to have the ID on the model, not just on the hashmap.
+As demonstrated above, avoid having to frequently index into large objects. Prefer turning the object into an array beforehand. Organizing your data to have the ID on the model can help, as you can use `Object.values()` and not have to refer to the key map to get the ID.
 
 ## 7. Use eval
 

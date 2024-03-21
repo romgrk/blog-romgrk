@@ -225,13 +225,18 @@ button {
   border: none;
   border-radius: 5px;
   background-color: var(--color-button-bg);
+  @apply transition-all;
 }
-button:focus,
-button:hover {
+button:focus:not([disabled]),
+button:hover:not([disabled]) {
   background-color: rgba(255, 255, 255, 0.4);
 }
-button:active {
+button:active:not([disabled]) {
   background-color: rgba(255, 255, 255, 0.15);
+}
+button[disabled] {
+  color: #ccc;
+  background-color: rgba(255, 255, 255, 0.10);
 }
 
 button.sm {
