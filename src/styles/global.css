@@ -106,11 +106,33 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--color-selection-bg);
 }
 
-a {
-  color: var(--color-link-fg);
-}
-a:hover {
-  color: var(--color-link-fg);
+main.home,
+.post-body {
+  a {
+    color: var(--color-link-fg);
+    text-decoration: none;
+  }
+  a {
+    background:
+      linear-gradient(
+        to right,
+        var(--color-link-fg),
+        var(--color-link-fg)
+      ),
+      linear-gradient(
+        to right,
+        rgba(255, 0, 0, 1),
+        rgba(255, 0, 180, 1),
+        rgba(0, 100, 200, 1)
+    );
+    background-size: 100% 1px, 0 1px;
+    background-position: 100% 100%, 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 400ms;
+  }
+  a:hover {
+    background-size: 0 1px, 100% 1px;
+  }
 }
 
 .text-warning {

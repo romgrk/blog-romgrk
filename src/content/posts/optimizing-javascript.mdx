@@ -20,7 +20,7 @@ This might sound evident, but it needs to be here because there can't be another
 
 ## 1. Avoid string comparisons
 
-Javascript makes it easy to hides the real cost of string comparisons. If you need to compare strings in C, you'd use `strcmp(a, b)`, versus `a == b` for integers. Javascript uses `===` for both, so you don't see the `strcmp`. But it's there, and a string comparison will always require comparing each of the characters in the string; string comparison is `O(n)`. One common javascript pattern to avoid is strings-as-enums. But with the advent of typescript this should be easily avoidable, as
+Javascript makes it easy to hide the real cost of string comparisons. If you need to compare strings in C, you'd use the `strcmp(a, b)` function. Javascript uses `===` instead, so you don't see the `strcmp`. But it's there, and a string comparison will always require comparing each of the characters in the string with the ones in the other string; string comparison is `O(n)`. One common javascript pattern to avoid is strings-as-enums. But with the advent of typescript this should be easily avoidable, as
 enums are integers by default.
 
 <div class="code-blocks-row">
@@ -28,7 +28,7 @@ enums are integers by default.
 ```typescript
 // No
 enum Position {
-  TOP = 'TOP',
+  TOP    = 'TOP',
   BOTTOM = 'BOTTOM',
 }
 ```
@@ -36,8 +36,8 @@ enum Position {
 ```typescript
 // Yes
 enum Position {
-  TOP,
-  BOTTOM,
+  TOP,    // = 0
+  BOTTOM, // = 1
 }
 ```
 
@@ -87,13 +87,50 @@ for (let i = 0; i < 1000000; i++) {
   client:load
 />
 
-As you can see, the difference can be significant. The difference isn't just due to the amount of comparisons needed, but also because integers are usually passed by value in JS engines, whereas strings are always passed as a pointer. For example, V8 represents integers as compact [Smi](https://medium.com/fhinkel/v8-internals-how-small-is-a-small-integer-e0badc18b6da) values, and JSC uses [double tagging](https://ktln2.org/2020/08/25/javascriptcore/) to the same effect, as SpiderMonkey does.
+As you can see, the difference can be significant. The difference isn't just due to the amount of comparisons needed, but also because integers are usually passed by value in JS engines, whereas strings are always passed as pointers, and memory accesses are expensive (see section 5). In string heavy code, this can have a huge impact.
 
-In string heavy code, this can have a huge impact. For example, I was able to [make this JSON5 javascript parser run 2x faster](https://github.com/json5/json5/pull/278) just by replacing strings by numbers.
+For a real-world example, I was able to [make this JSON5 javascript parser run 2x faster](https://github.com/json5/json5/pull/278)* just by replacing string constants with numbers.  
+<small>*Unfortunately it wasn't merged, but that's how open-source is.</small>
 
 ## 2. Avoid different shapes
 
-Javascript engines try to optimize code by assuming that objects have a specific shape, and that functions will receive objects of the same shape. This allows them to store the keys of the shape in one table common for all objects of that shape, and the values in a flat array. For example, at runtime if the following function receives two objects with the shape `{ x: number, y: number }`, the engine is going to speculate that future objects will have the same shape, and generate machine code optimized for that shape.
+Javascript engines try to optimize code by assuming that objects have a specific shape, and that functions will receive objects of the same shape. This allows them to store the keys of the shape once for all objects of that shape, and the values in a separate flat array. To represent it in javascript:
+
+<div class="code-blocks-row">
+
+```javascript
+const objects = [
+  {
+    name: 'Anthony',
+    age: 36,
+  },
+  {
+    name: 'Eckhart',
+    age: 42
+  },
+]
+```
+
+```javascript
+const shape = [
+  { name: 'name', type: 'string' },
+  { name: 'age',  type: 'integer' },
+]
+
+const objects = [
+  ['Anthony', 36],
+  ['Eckhart', 42],
+]
+
+```
+
+</div>
+
+<Aside title="A note on terminology">
+  I have used the word "shape" for this concept, but be aware that you may also find *"hidden class"* or *"map"* used to describe it, depending on the engine.
+</Aside>
+
+For example, at runtime if the following function receives two objects with the shape `{ x: number, y: number }`, the engine is going to speculate that future objects will have the same shape, and generate machine code optimized for that shape.
 
 ```javascript
 function add(a, b) {
@@ -161,11 +198,14 @@ for (let i = 0; i < 1000000; i++) {
 
 #### What the eff should I do about this?
 
-Easier said than done but: **create all your objects with the exact same shape**. Even just inverting two fields destroys your performance. For example, here are [simple cases](https://github.com/facebook/react/pull/28569) I <mark title="see section 10 for how">found</mark> in React's codebase, but they already had a [much higher impact case](https://v8.dev/blog/react-cliff) of the same problem a few years ago.
+Easier said than done but: **create all your objects with the exact same shape**. Even something as trivial as **writing your React component props in a different order can trigger this**.  
 
-<Aside title="A note on terminology">
-I have used the word "shape" for this concept, but be aware that you may also find *"hidden class"* or *"map"* used to describe it, depending on the engine.
+For example, here are [simple cases](https://github.com/facebook/react/pull/28569) I found in React's codebase, but they already had a [much higher impact case](https://v8.dev/blog/react-cliff) of the same problem a few years ago because they were initializing an object with an integer, then later storing a float. Yes, changing the type also changes the shape. Yes, there are integer and double types hidden behind `number`.
+
+<Aside title="String and number representation">
+ Engines can usually encode integers as values. For example, V8 represents integers as compact [Smi](https://medium.com/fhinkel/v8-internals-how-small-is-a-small-integer-e0badc18b6da) (SMall Integer) values, and JSC uses [double tagging](https://ktln2.org/2020/08/25/javascriptcore/) to pass numbers by value, as SpiderMonkey does.
 </Aside>
+
 
 ## 3. Avoid array/object methods
 
@@ -793,7 +833,7 @@ If you've just optimized a function and it now runs 100x faster, doubt it. Try t
 
 Different engines will optimize certain patterns better or worst than others. You should benchmark for the engine(s) that are relevant to you, and prioritize which one is more important. [Here's a real-world example](https://github.com/babel/babel/pull/16357) in Babel where improving V8 means decreasing JSC's performance.
 
-## 10. Profiling
+## 10. Profiling & tools
 
 Various remarks about profiling and devtools.
 
