@@ -42,14 +42,7 @@ const sidebar = Object.assign({}, DEFAULT_SIDEBAR, Astro.props.sidebar)
     font-size: 1.1rem;
     margin-bottom: 1em;
   }
-  .post-sidebar {
-    @apply pt-72;
-    @apply flex;
-    @apply flex-row;
-    @apply justify-end;
-    @apply items-start;
-    @apply pl-4;
-  }
+  .post-sidebar {}
   .post-sidebar-content {
     @apply hidden;
     @apply sticky;
@@ -58,6 +51,14 @@ const sidebar = Object.assign({}, DEFAULT_SIDEBAR, Astro.props.sidebar)
     overflow: hidden;
   }
   @media (min-width: 1400px) {
+    .post-sidebar {
+      @apply pt-72;
+      @apply flex;
+      @apply flex-row;
+      @apply justify-end;
+      @apply items-start;
+      @apply pl-4;
+    }
     .post-sidebar-content {
       display: block !important;
     }
