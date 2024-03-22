@@ -885,6 +885,10 @@ for (let i = 0; i < 100; i++) {
 
 This sort of optimization can give you moderate improvements, but those will add up. They are a nice addition to more crucial optimizations, like shapes and memory I/O. But note that specialization can turn against you if your conditions change, so be careful when applying this one.
 
+<Aside title="Branch prediction and branchless code">
+  Removing branches from your code can be incredibly efficient for performance. For more details on what a branch predictor is, read the classic stackoverflow answer [Why is processing a sorted array faster](https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array).
+</Aside>
+
 ## 10. Benchmarking
 
 I've left this section for the end for one reason: I needed to establish credibility with the fun sections above. Now that I (hopefully) have it, let me tell you that benchmarking is the most important part of optimization. Not only is it the most important, but it's also *hard*. Even after 20 years of experience, I still sometimes create benchmark that are flawed, or use the profiling tools incorrectly. So whatever you do, please put the most effort into benchmarking correctly.
