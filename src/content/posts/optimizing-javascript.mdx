@@ -804,7 +804,7 @@ For more details, see [string.h on V8](https://github.com/v8/v8/blob/main/src/ob
 
 One important concept in performance optimization is *specialization*: adapting your logic to fit in the constraints of your particular use-case. This usually means figuring out what conditions are *likely* to be true for your case, and coding for those conditions.
 
-Let's say we are a merchant that sometimes needs to add tags to its product list. We know from experience that our tags are usually empty. Knowing that information, we can specialize our function for that case:
+Let's say we are a merchant that sometimes needs to add tags to their product list. We know from experience that our tags are usually empty. Knowing that information, we can specialize our function for that case:
 
 <div id="benchmark-specialization" class="code-blocks">
 
