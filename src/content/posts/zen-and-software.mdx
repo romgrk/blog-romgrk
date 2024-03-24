@@ -6,12 +6,13 @@ sidebar: { display: false }
 draft: true
 ---
 import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
+import Aside from '../../components/Aside.astro'
 
 I've found over the years that there are two sides to programming. The first side is computer science, and it's about data structures, algorithms and CPUs. The second side, I call software engineering. This side is about creating readable and maintainable codebases that can evolve over time, and just like Quality in *Zen and the art of motorcycle maintenance*, is hard to quantify, but easy to qualify: you know it when you see it.
 
 ### On the virtues of constraints
 
-Zen is a special buddhist tradition, in that it's both very <mark title="prone to abolishing established dogmas and practices">iconoclast</mark> but also very strict. Traditional Zen monks get up at 4am, meditate, chant, clean, walk around, beg for food, eat in silence, meditate some more, chant some more, clean some more, and go to sleep to start again the next day. But there is a reason for all those rules: the simple and repetitive structure gives their mind a stable abode in which enlightenment can arise more easily. Software engineering benefits similarly from rules and constraints, they allow one to focus on the essential: the precious jewel of nirv... ah wait no that's Zen. They allow one to focus on the essential: writing maintainable code.
+Zen is a special buddhist tradition, in that it's both very <mark title="prone to questioning established dogmas and beliefs">iconoclast</mark> but also very strict. Traditional Zen monks get up at 4am, meditate, chant, clean, walk around, beg for food, eat in silence, meditate some more, chant some more, clean some more, and go to sleep to start again the next day. But there is a reason for all those rules: the simple and repetitive structure gives their mind a stable abode in which enlightenment can arise more easily. Software engineering benefits similarly from rules and constraints, they allow one to focus on the essential: the precious jewel of nirv... ah wait no that's Zen. They allow one to focus on the essential: writing maintainable code.
 
 A common mistake in novice programmers is the overreliance on defensive coding patterns:
 
@@ -27,7 +28,7 @@ function findUser(id) {
 
 And we know the reason for that: they didn't establish proper constraints on their system, and they must now enforce validation one place at a time. Defensive coding is a symptom of uncertainty. **Placing the right constraints as soon as possible allows one to gain certainty.**
 
-I think anyone with enough experience knows that a type system is great, because it allows one to prevent cases that should not arise. They push the responsability of validation to the source, where it belongs. Most software should be a well-oiled machine with clear & strict internal types, with the unsafe fuzzy user-input types relegated at the edge of the system, validated by clear rules.
+I think anyone with enough experience knows that a type system is great, *[insert joke about DHH]*, because it allows one to prevent cases that should not arise. They push the responsability of validation to the source, where it belongs. Most software should be a well-oiled machine with clear & strict internal types, with the unsafe fuzzy user-input types relegated at the edge of the system, validated by clear rules.
 
 ```typescript
 function findUser(id: number) {
@@ -39,7 +40,7 @@ Even stronger constraints can also enable even greater power. The other day I wa
 
 So the question I always ask myself is, **which constraints can I place on my system to ensure the least effort needed down the line?**
 
-Those contraints can be both internal and external. Early internet pioneer Jon Postel said *"be conservative in what you send, be liberal in what you accept"*, often refered to as the Robustness Principle. I'm sorry Jon & friends but I don't buy this one. By being liberal in what you accept, wouldn't you be encouraging others to build unsound systems? By building a "robust" system that accepts unstrict input, aren't you encouraging the ecosystem that depends on you to not be robut? In the name of immediate gains, aren't you condeming the future internet to pay the cost of maintaining the early flaws forever? I say **be strict in what you accept; make your API options limited to the essential; find the best way to do a thing, and don't expose a second way to do it**.*
+Those contraints can be both internal and external. Early internet pioneer Jon Postel said *"be conservative in what you send, be liberal in what you accept"*, often refered to as the Robustness Principle. I'm sorry Jon & friends but I don't buy this one. By being liberal in what you accept, wouldn't you be encouraging others to build unsound systems? By building a "robust" system that accepts unstrict input, aren't you encouraging the ecosystem that depends on you to not be robust? In the name of immediate gains, aren't you condemning the future internet to pay the cost of maintaining the early flaws forever? I say **be strict in what you accept; make your API options limited to the essential; find the best way to do a thing, and don't expose a second way to do it**.*
 
 <small>*Yes I'm sure you have an exception to that. Maybe you're right, maybe you're not. There are no quantitative rules here, only qualitative judgements.</small>
 
@@ -91,15 +92,12 @@ const ELEMENT_DEFAULT_VALUES = {
   dimensions: { width: 0, height: 0 },
   getClassName: () => '',
 }
+// and a hundred cleared checks down the line
 ```
 
 So which nullable values can you get rid of? Which APIs can you simplify? Which constraints should you add?
 
-<br />
-<RandomPlant />
-<br />
-<br />
-<br />
+<RandomPlant className='mt-8 mb-24' />
 
 ### On the utility of semantics
 
@@ -111,15 +109,126 @@ For a programmer, a value is the union of both.
 
 A bit like enlightenment is the knowledge that there was never a duality and that separation is an illusion of the mind.
 
-### Formatting: alignment
+Use a value not only because it is the number you need, but also because it has the meaning the next programmer will need to understand. A perfect example of the application of this principle is being able to re-assign a variable to a new variable without changing its value, simply because we need a new meaning for it. To take an example from a codebase I've worked on lately:
 
-### Formatting: pyramids
+```typescript
+const isVirtualRow = rowIndexInPage === virtualRowIndex
+const isNotVisible = isVirtualRow
+```
+
+Naming is an important aspect in programming, *[insert joke about naming, cache invalidation and off by one errors]*. If you find yourself struggling to find a name for a new concept, take time to pause and figure one out. The name you pick for that concept, be it a variable, a function, or the main class your whole application will depend on, will have an influence on how you and future programmers understand and solve the problem domain. If you don't have a good satisfying name, give it your best try but more importantly **come back to refactor it as soon as you have understood the concept better**.
 
 
+> Take time to find good names and take time to re-factor those names as much as necessary. As a wise stackoverflow user once said, the process of naming makes you face the horrible fact that you have no idea what the hell you're doing.  
+>
+> ― A reddit user
 
-<br />
-<br />
-<RandomPlant />
-<br />
-<br />
+So which names could you refactor? How can you improve the semantics of your program?
+
+<RandomPlant className='mt-8 mb-16' />
+
+<Aside title='On butterflies' className='mb-32'>
+  I promised myself I wouldn't put asides in this post but I can't resist. Did you know that JavaScriptCore named one of its concept a "butterfly"? I was utterly confused the first time I saw `GetButterfly` in their bytecode dissasembly.
+  https://liveoverflow.com/the-butterfly-of-jsobject-browser-0x02/
+</Aside>
+
+
+### On the helpfulness of beauty
+
+Some would have you think that software engineering is a cold discipline, nothing could be further from the truth. Writing software is an art, it's composing a virtual machine with logic constructs made visible with words, words that communicate with the next human that will read them. Which of us hasn't known the joy of completing a function, a module, with the knowledge that it runs with the utmost elegance, efficiency and simplicity that we could ever come up with? Material-world artisans can build wonderful contraptions made of lights, rolling balls, levers and pullies. So can we, but ours are invisible to the untrained eye.
+
+The way we write softare has a huge influence on how it is perceived by others. The brain is a pattern-matching system that relies on recurring patterns to ease its processing. Inserting symmetry, spacing and alignment in our code makes it simpler to read. For example, I initially wrote these words you saw sooner in this format:
+
+> For a machine, a value is a number. For a human, a value has a meaning. For a programmer, a value is the union of both.
+
+Although the conventional way to write paragraphs is the one above, I know that inserting newlines before the "For" would break the text in easier to consume bits, as the brain can see the recurring "For", the somewhat aligned "a value...", and run its circuits in harmony:
+
+> For a machine, a value is a number.  
+> For a human, a value has a meaning.  
+> For a programmer, a value is the union of both.
+
+#### Building pyramids
+
+Tell me, which one of these blocks seems easier to read for you?
+
+<div class='code-blocks'>
+
+```javascript
+const hasNotInitialized = items.some(i => i.status === Status.NotInitialized)
+const hasActive = items.some(i => i.status === Status.Active)
+const hasInactive = items.some(i => i.status === Status.Inactive)
+const hasPending = items.some(i => i.status === Status.Pending)
+```
+
+```javascript
+const hasActive = items.some(i => i.status === Status.Active)
+const hasPending = items.some(i => i.status === Status.Pending)
+const hasInactive = items.some(i => i.status === Status.Inactive)
+const hasNotInitialized = items.some(i => i.status === Status.NotInitialized)
+```
+
+</div>
+
+It's quite apparent which one is better, because it allows the eye to roll on its structure.
+
+#### Aligning for logic
+
+Another way in which harmonious alignment can be helpful is when we need have operations on mostly similar expression, with slightly differing semantics. The example below is from a python codebase I worked on (written in javascript because I hate python). For those who don't know, a pandas dataframe (`df`) has overriden operators such that something like `df > 5` will return a subset of the dataframe in which elements are greater than 5. For the record, this code block is splitting a dataset in two subsegments.
+
+<div class='code-blocks'>
+
+```javascript
+// code as the auto-formatter wanted it
+const average = (stats, df) => [df > stats.average, df <= stats.average]
+const q1 = (stats, df) => [df < stats.q1, df <= stats.q1]
+const outliers = (stats, df) => [df > stats.outliers, df <= stats.outliers]
+const even = (stats, df) => [df % 2 == 0, df % 2 == 1]
+```
+
+```javascript
+// code as I wanted it
+const average = (stats, df) => [
+  df >  stats.average,
+  df <= stats.average,
+]
+const q1 = (stats, df) => [
+  df <  stats.q1,
+  df <= stats.q1,
+]
+const outlier = (stats, df) => [
+  df >  stats.outlier,
+  df <= stats.outlier,
+]
+const even = (stats, df) => [
+  df % 2 == 0,
+  df % 2 == 1,
+]
+```
+
+</div>
+
+And I think the reason is apparent. The second way to write it makes it abundantly apparent how each of the subsegments is selected. Writing an incorrect segment selector is much harder because the harmony between the lines makes it obvious what and where the disparity is. When did you notice that the logic for `q1` subsegments was wrong, in the first or second block? If you didn't, would you have realized when aligning the segments?
+
+For all their benefits, full-code formatters like `prettier` have gotten many programmers convinced that even talking about formatting and alignment is a negative, best left to machines to deal with. Code is not just about machines. It's about humans. I don't want to have to argue if the `{` should be after the `if` or on a line of its own, I don't want to have to argue about indenting with 2 or 4 spaces, or have to remind people about adding spaces around all their operators. Formatters that fix only errors like `eslint` can do that well enough that. Beauty goes beyond `prettier`.
+
+<RandomPlant className='mt-8 mb-16' />
+
+### On the benefits of simplicity
+
+I think if I had to summarize software engineering in one expression, it would be *managing complexity*. Most of our work as software engineers is keeping complexity in check with all the tools we have seen, like abstracting complex objects or operations behind a good descriptive name. One of the characteristics that code should have above all is *simplicity*, and that quality should be the first to aim for. Simple code is easy to read, easy to modify and easy to debug. Code that isn't simple is much harder to also make *correct* and *performant*, thus we should always aim for *simplicity* first.
+
+In software, less is more, just like liberation is just removing ignorance. How can you make your code more simple?
+
+<RandomPlant className='mt-8 mb-16' />
+
+### On the joy of pleasure
+
+As a last point, I think I need to mention that the root of all qualities in software engineering is *pleasure*. You write good, elegant, beautiful, simple code because you find pleasure in writing software. If you don't find pleasure in it, you will never put the effort to make any of the above qualities emerge, and you won't find joy in your craft.
+
+<RandomPlant className='mt-8 mb-16' />
+
+### Credits
+
+I can't claim credit for any of the points here as they've all been transmitted to me throughout my years of programming. I unfortunately can't remember where I picked up each of those idea, but I think I owe at least some of them to [Uncle Bob](https://blog.cleancoder.com/).
+
 

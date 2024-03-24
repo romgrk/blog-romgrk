@@ -1,6 +1,6 @@
 ---
 import { Icon } from 'astro-icon/components'
-const { type = 'info', title, small } = Astro.props;
+const { type = 'info', title, small, className } = Astro.props;
 ---
 <style is:global>
 .aside {
@@ -38,7 +38,7 @@ const { type = 'info', title, small } = Astro.props;
 }
 </style>
 
-<aside class={`aside aside-${type} ` + (small ? 'aside-small' : '')}>
+<aside class={`aside aside-${type} ` + (small ? ' aside-small' : '') + (className ? ' ' + className : '')}>
   <h6><Icon name='octicon:info-16' /><span>{title}</span></h6>
   <slot />
 </aside>

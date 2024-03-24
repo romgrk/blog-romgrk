@@ -323,50 +323,57 @@ button.sm {
  * Posts
  */
 
-article h2 {
+.markdown-content h2 {
   font-size:     2.3rem;
   margin-top:    3.0rem;
   margin-bottom: 1.5rem;
 }
-article h3 {
+.markdown-content h3 {
   font-size:     1.6rem;
   margin-top:    2.0rem;
   margin-bottom: 1.5rem;
 }
-article h4 {
+.markdown-content h4 {
   font-size:     1.2rem;
   margin-top:    2.0rem;
   margin-bottom: 1.5rem;
 }
-article p {
+.markdown-content p {
   margin-bottom: 2rem;
 }
-article mark {
+.markdown-content mark {
   color: unset;
   background-color: transparent;
   border-bottom: 1px dashed var(--color-muted-fg);
 }
-article ul {
+.markdown-content ul {
   margin-left: 1rem;
   margin-bottom: 2rem;
 }
-article ul li {
+.markdown-content ul li {
   padding-left: 1rem;
   margin-bottom: 0.5em;
   list-style: outside;
 }
 
-article ol {
+.markdown-content ol {
   padding-left: 2rem;
   margin-bottom: 2rem;
 }
-article ol li {
+.markdown-content ol li {
   padding-left: 1rem;
   margin-bottom: 0.0em;
   list-style: decimal;
 }
-article ol li p {
+.markdown-content ol li p {
   /* margin: 0; */
+}
+
+.markdown-content blockquote {
+  @apply px-8;
+  @apply text-neutral-500;
+  @apply border-l-2;
+  @apply border-neutral-500/50;
 }
 
 code {
@@ -439,14 +446,6 @@ figure > pre > code {
   .code-blocks-row pre {
     margin-bottom: 0;
   }
-}
-
-
-blockquote {
-  border-left: 4px solid var(--accent);
-  padding: 0 0 0 20px;
-  margin: 0px;
-  font-size: 1.333em;
 }
 
 hr {

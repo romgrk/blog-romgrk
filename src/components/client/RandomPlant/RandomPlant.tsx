@@ -9,14 +9,14 @@ const plants = [
   plant2,
 ]
 
-export default function RandomPlant() {
+export default function RandomPlant({ className }: { className?: string }) {
   const index = useRef(Math.floor(Math.random() * plants.length)).current
   const plant = plants[index].trim()
 
   return (
     <div className='random-plant'>
       <div
-        className='random-plant-svg'
+        className={'random-plant-svg ' + (className ?? '')}
         dangerouslySetInnerHTML={{ __html: plant }}
       />
     </div>
