@@ -106,35 +106,6 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--color-selection-bg);
 }
 
-main.home,
-.post-body {
-  a {
-    color: var(--color-link-fg);
-    text-decoration: none;
-  }
-  a {
-    background:
-      linear-gradient(
-        to right,
-        var(--color-link-fg),
-        var(--color-link-fg)
-      ),
-      linear-gradient(
-        to right,
-        rgba(255, 0, 0, 1),
-        rgba(255, 0, 180, 1),
-        rgba(0, 100, 200, 1)
-    );
-    background-size: 100% 1px, 0 1px;
-    background-position: 100% 100%, 0 100%;
-    background-repeat: no-repeat;
-    transition: background-size 400ms;
-  }
-  a:hover {
-    background-size: 0 1px, 100% 1px;
-  }
-}
-
 .text-warning {
   color: var(--color-warning-fg);
 }
@@ -322,6 +293,32 @@ button.sm {
 /*
  * Posts
  */
+
+.markdown-content a {
+  color: var(--color-link-fg);
+  text-decoration: none;
+}
+.markdown-content a {
+  background:
+    linear-gradient(
+      to right,
+      var(--color-link-fg),
+      var(--color-link-fg)
+    ),
+    linear-gradient(
+      to right,
+      rgba(255, 0, 0, 1),
+      rgba(255, 0, 180, 1),
+      rgba(0, 100, 200, 1)
+  );
+  background-size: 100% 1px, 0 1px;
+  background-position: 100% 100%, 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 400ms;
+}
+.markdown-content a:hover {
+  background-size: 0 1px, 100% 1px;
+}
 
 .markdown-content h2 {
   font-size:     2.3rem;
