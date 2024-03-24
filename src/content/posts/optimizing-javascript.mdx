@@ -656,7 +656,10 @@ createMessages(key, values)
   client:load
 />
 
+Another good use-case for `eval` could be to compile a filter predicate function where you discard the branches that you know will never be taken. In general, any function that is going to be run in a very hot loop is a good candidate for this kind of optimization.
+
 Obviously the usual warnings about `eval()` apply: don't trust user input, sanitize anything that gets passed into the `eval()`'d code, and don't create any XSS possibility. Also note that some environments don't allow access to `eval()`, such as browser pages with a CSP.
+
 
 
 ## 8. Use strings, carefully
@@ -893,20 +896,23 @@ This sort of optimization can give you moderate improvements, but those will add
   Removing branches from your code can be incredibly efficient for performance. For more details on what a branch predictor is, read the classic stackoverflow answer [Why is processing a sorted array faster](https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array).
 </Aside>
 
+<br />
+
 ## 10. Data structures
 
 I won't go in details about data structures as they would require their own post! But be aware that using the incorrect data structures for your use-case can have a **bigger impact than any of the optimizations above**. I would suggest you to be familiar with the native ones like `Map` and `Set`, and to learn about linked lists, priority queues, trees (RB and B+) and tries.
 
 As an anecdote, I had a case where we were able to [reduce the runtime of a function from 5 seconds to 22 milliseconds](https://github.com/mui/mui-x/pull/9200) by switching out an array with a linked list!
 
+<RandomPlant className='mt-8 mb-16' />
+
 ## 11. Benchmarking
 
-I've left this section for the end for one reason: I needed to establish credibility with the fun sections above. Now that I (hopefully) have it, let me tell you that benchmarking is the most important part of optimization. Not only is it the most important, but it's also *hard*. Even after 20 years of experience, I still sometimes create benchmarks that are flawed, or use the profiling tools incorrectly. So whatever you do, please put the most effort into benchmarking correctly.
+I've left this section for the end for one reason: I needed to establish credibility with the fun sections above. Now that I (hopefully) have it, let me tell you that benchmarking is the most important part of optimization. Not only is it the most important, but it's also *hard*. Even after 20 years of experience, I still sometimes create benchmarks that are flawed, or use the profiling tools incorrectly. So whatever you do, please **put the most effort into benchmarking correctly**.
 
-### 11.0 Benchmark-optimize loop
+### 11.0 Start with the top
 
-You should always 1. benchmark, then 2. optimize the highest entry on the list that hasn't been fully optimized, then 3. goto 1.
-
+Your priority should always be to optimize the function/section of code that makes up the biggest part of your runtime. If you spend time optimizing anything else than the top, you are wasting time.
 
 ### 11.1 Avoid micro-benchmarks
 
