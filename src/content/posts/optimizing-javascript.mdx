@@ -902,7 +902,44 @@ This sort of optimization can give you moderate improvements, but those will add
 
 I won't go in details about data structures as they would require their own post! But be aware that using the incorrect data structures for your use-case can have a **bigger impact than any of the optimizations above**. I would suggest you to be familiar with the native ones like `Map` and `Set`, and to learn about linked lists, priority queues, trees (RB and B+) and tries.
 
-As an anecdote, I had a case where we were able to [reduce the runtime of a function from 5 seconds to 22 milliseconds](https://github.com/mui/mui-x/pull/9200) by switching out an array with a linked list!
+But for a quick example, let's compare how `Array.includes` compares to `Set.has` for a small list:
+
+<div id="benchmark-data-structures" class="code-blocks">
+
+```javascript
+// setup:
+const userIds = Array.from({ length: 1_000 }).map((_, i) => i)
+const adminIdsArray = userIds.slice(0, 10)
+const adminIdsSet = new Set(adminIdsArray)
+```
+
+```javascript
+// 1. Array
+let _ = 0
+for (let i = 0; i < userIds.length; i++) {
+  if (adminIdsArray.includes(userIds[i])) { _ += 1 }
+}
+```
+
+```javascript
+// 2. Set
+let _ = 0
+for (let i = 0; i < userIds.length; i++) {
+  if (adminIdsSet.has(userIds[i])) { _ += 1 }
+}
+```
+
+</div>
+
+<Benchmark
+  id="benchmark-data-structures"
+  results={{"1. Array":{"runTime":-1000,"amountOfRounds":89836,"percent":34.27},"2. Set":{"runTime":-1000,"amountOfRounds":262116,"percent":100}}}
+  client:load
+/>
+
+As you can see, the data structure choice makes a very impactful difference.
+
+As a real-world example, I had a case where we were able to [reduce the runtime of a function from 5 seconds to 22 milliseconds](https://github.com/mui/mui-x/pull/9200) by switching out an array with a linked list!
 
 <RandomPlant className='mt-8 mb-16' />
 
