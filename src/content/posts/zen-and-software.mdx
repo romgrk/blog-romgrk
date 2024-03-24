@@ -1,0 +1,125 @@
+---
+title: 'Zen and the art of software engineering'
+description: 'romgrk on readability'
+pubDate: 'Mar 23 2024'
+sidebar: { display: false }
+draft: true
+---
+import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
+
+I've found over the years that there are two sides to programming. The first side is computer science, and it's about data structures, algorithms and CPUs. The second side, I call software engineering. This side is about creating readable and maintainable codebases that can evolve over time, and just like Quality in *Zen and the art of motorcycle maintenance*, is hard to quantify, but easy to qualify: you know it when you see it.
+
+### On the virtues of constraints
+
+Zen is a special buddhist tradition, in that it's both very <mark title="prone to abolishing established dogmas and practices">iconoclast</mark> but also very strict. Traditional Zen monks get up at 4am, meditate, chant, clean, walk around, beg for food, eat in silence, meditate some more, chant some more, clean some more, and go to sleep to start again the next day. But there is a reason for all those rules: the simple and repetitive structure gives their mind a stable abode in which enlightenment can arise more easily. Software engineering benefits similarly from rules and constraints, they allow one to focus on the essential: the precious jewel of nirv... ah wait no that's Zen. They allow one to focus on the essential: writing maintainable code.
+
+A common mistake in novice programmers is the overreliance on defensive coding patterns:
+
+```javascript
+function findUser(id) {
+  if (id === undefined || id === null)
+    throw new Error('ID is not set')
+  if (typeof id === 'string')
+    throw new Error('Unsafe ID') // avoid SQL injection
+  return db.select(`SELECT * FROM users WHERE id = ${id}`)
+}
+```
+
+And we know the reason for that: they didn't establish proper constraints on their system, and they must now enforce validation one place at a time. Defensive coding is a symptom of uncertainty. **Placing the right constraints as soon as possible allows one to gain certainty.**
+
+I think anyone with enough experience knows that a type system is great, because it allows one to prevent cases that should not arise. They push the responsability of validation to the source, where it belongs. Most software should be a well-oiled machine with clear & strict internal types, with the unsafe fuzzy user-input types relegated at the edge of the system, validated by clear rules.
+
+```typescript
+function findUser(id: number) {
+  return db.select(`SELECT * FROM users WHERE id = ${id}`)
+}
+```
+
+Even stronger constraints can also enable even greater power. The other day I was writing a PR for a Rust codebase I wasn't familiar with that had multi-threaded code. As I was coding, I felt like it would have been possible to switch from a (multi-thread safe but expensive) `Arc<Mutex<T>>` to a (single-threaded only) `Rc<RefCell<T>>`. It sounds like magic but all I had to do to validate that it was safe, was to do the change and let the compiler compile. It compiled, thus it was safe. Doing the same change in C/C++ would have required hours of careful reading of the full system before doing a change like that. The constraints placed by the Rust language enabled me to write correct code easily.
+
+So the question I always ask myself is, **which constraints can I place on my system to ensure the least effort needed down the line?**
+
+Those contraints can be both internal and external. Early internet pioneer Jon Postel said *"be conservative in what you send, be liberal in what you accept"*, often refered to as the Robustness Principle. I'm sorry Jon & friends but I don't buy this one. By being liberal in what you accept, wouldn't you be encouraging others to build unsound systems? By building a "robust" system that accepts unstrict input, aren't you encouraging the ecosystem that depends on you to not be robut? In the name of immediate gains, aren't you condeming the future internet to pay the cost of maintaining the early flaws forever? I say **be strict in what you accept; make your API options limited to the essential; find the best way to do a thing, and don't expose a second way to do it**.*
+
+<small>*Yes I'm sure you have an exception to that. Maybe you're right, maybe you're not. There are no quantitative rules here, only qualitative judgements.</small>
+
+<br/>
+<br/>
+
+If we go examine an internal case, a common example I see in javascript/typescript is nullable types:
+
+```typescript
+type Element = {
+  dimensions?: {
+    width: number;
+    height: number;
+  };
+  getClassName?: () => number;
+}
+```
+
+The problem with these is that they force every part of the system to deal with nullability:
+
+```typescript
+// a check here
+if ((element.dimensions?.width ?? 0) > 100) {
+  // ...
+}
+
+// another here
+if (element.getClassName) {
+  classNames.push(element.getClassName())
+}
+
+// and one more
+totalHeight += element.dimensions?.height ?? 0
+
+// and a hundred more down the line
+```
+
+In the cases where it makes sense, enforcing default values gets rid of all subsequent checks, and frees up the future programmer from the mental effort of needing to pick a good default value/behavior on the fly:
+
+```typescript
+type Element = {
+  dimensions: {
+    width: number;
+    height: number;
+  };
+  getClassName: () => number;
+}
+const ELEMENT_DEFAULT_VALUES = {
+  dimensions: { width: 0, height: 0 },
+  getClassName: () => '',
+}
+```
+
+So which nullable values can you get rid of? Which APIs can you simplify? Which constraints should you add?
+
+<br />
+<RandomPlant />
+<br />
+<br />
+<br />
+
+### On the utility of semantics
+
+An understanding that needs to happen to evolve as a software engineer, is that code isn't just about having a machine execute it. It's also about having a human understand it.
+
+For a machine, a value is a number.  
+For a human, a value has a meaning.  
+For a programmer, a value is the union of both.
+
+A bit like enlightenment is the knowledge that there was never a duality and that separation is an illusion of the mind.
+
+### Formatting: alignment
+
+### Formatting: pyramids
+
+
+
+<br />
+<br />
+<RandomPlant />
+<br />
+<br />
+
