@@ -7,17 +7,41 @@ const posts = (await getCollection('posts'))
   .filter(a => a.data.draft !== true)
   .reverse()
 
+function classFor(rating) {
+  if (rating === 10) return 'text-green-500'
+  if (rating >= 8) return 'text-lime-500'
+  if (rating >= 6) return 'text-yellow-500'
+  if (rating >= 4) return 'text-amber-500'
+  if (rating >= 2) return 'text-orange-500'
+  if (rating >= 0) return 'text-red-500'
+}
 
 ---
+
+<p class="mb-8 text-md text-neutral-500">
+  The ratings reflect a self-evaluation of the quality of the post.
+</p>
+
 <section class="posts">
   {
     posts.map((post) => (
       <div class="post">
         <a href={`/posts/${post.slug}/`}>
-          <h4 class="post-title">{post.data.title}</h4>
-          <p class="post-date">
-            <FormattedDate date={post.data.pubDate} />
-          </p>
+          <h5 class="post-title">
+            {post.data.title}
+          </h5>
+          <div class="post-details">
+            <span class="post-date">
+              <FormattedDate date={post.data.pubDate} />
+            </span>
+            <span class="post-rating">
+              {post.data.rating !== undefined &&
+                <span class={classFor(post.data.rating)}>
+                  {post.data.rating}∕10
+                </span>
+              }
+            </span>
+          </div>
         </a>
       </div>
     ))
@@ -48,10 +72,17 @@ const posts = (await getCollection('posts'))
   .post-title {
     color: var(--color-body-fg);
     line-height: 1.2;
+    margin: 0;
   }
   .post a:hover .post-title {
     color: rgb(var(--color-link-fg));
   }
+  .post-rating {
+    @apply font-normal;
+    @apply ml-3;
+    font-size: 1.0rem;
+  }
+
   .post-date {
     color: var(--color-muted-fg);
     font-size: 1rem;
@@ -63,13 +94,6 @@ const posts = (await getCollection('posts'))
     }
     .post {
       width: 100%;
-      text-align: center;
-    }
-    .post:first-child {
-      margin-bottom: 0;
-    }
-    .post:first-child .post-title {
-      font-size: 1.563em;
     }
   }
 </style>
