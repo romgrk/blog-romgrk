@@ -20,7 +20,7 @@ This might sound evident, but it needs to be here because there can't be another
 
 ## 1. Avoid string comparisons
 
-Javascript makes it easy to hide the real cost of string comparisons. If you need to compare strings in C, you'd use the `strcmp(a, b)` function. Javascript uses `===` instead, so you don't see the `strcmp`. But it's there, and a string comparison will usually require comparing each of the characters in the string with the ones in the other string; string comparison is `O(n)`. One common javascript pattern to avoid is strings-as-enums. But with the advent of typescript this should be easily avoidable, as
+Javascript makes it easy to hide the real cost of string comparisons. If you need to compare strings in C, you'd use the `strcmp(a, b)` function. Javascript uses `===` instead, so you don't see the `strcmp`. But it's there, and a string comparison will usually (but not always) require comparing each of the characters in the string with the ones in the other string; string comparison is `O(n)`. One common javascript pattern to avoid is strings-as-enums. But with the advent of typescript this should be easily avoidable, as
 enums are integers by default.
 
 <div class="code-blocks-row">
@@ -91,7 +91,7 @@ for (let i = 0; i < 1000000; i++) {
   Percentage results represent the number of operations completed within 1s, divided by the number of operations of the highest scoring case. Higher is better.
 </Aside>
 
-As you can see, the difference can be significant. The difference isn't just due to the amount of comparisons needed, but also because integers are usually passed by value in JS engines, whereas strings are always passed as pointers, and memory accesses are expensive (see section 5). In string heavy code, this can have a huge impact.
+As you can see, the difference can be significant. The difference isn't necessarily due to the `strcmp` cost as engines can sometimes use a string pool and compare by reference, but it can also be because integers are usually passed by value in JS engines, whereas strings are always passed as pointers, and memory accesses are expensive (see section 5). In string heavy code, this can have a huge impact.
 
 For a real-world example, I was able to [make this JSON5 javascript parser run 2x faster](https://github.com/json5/json5/pull/278)* just by replacing string constants with numbers.  
 <small>*Unfortunately it wasn't merged, but that's how open-source is.</small>
