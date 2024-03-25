@@ -510,7 +510,7 @@ let r = 0; for (let i = 0; i < 100000; i++) { r += buffer[random(RAM)] }
 
 **Ruthlessly eliminate every single data or memory allocations** that can be eliminated. The smaller your dataset is, the faster your program will run. Memory I/O is the bottleneck for 95% of programs. Another good strategy can be to split your work into chunks, and ensure you work on a small dataset at a time.
 
-For more details on CPU and memory, [see this link](https://www.akkadia.org/drepper/cpumemory.pdf).
+For more details on CPU and memory, [see this link](https://people.freebsd.org/~lstewart/articles/cpumemory.pdf).
 
 <Aside title="About immutable data structures">
   Immutability is great for clarity and correctness, but in the context of performance, updating an immutable data structure means making a copy of the container, and that's more memory I/O that will flush your caches. You should avoid immutable data structures when possible.
