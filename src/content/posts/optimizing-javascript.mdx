@@ -1008,76 +1008,10 @@ Beyond the regular browser devtools, it may help to be aware of these options:
 
 Hope you learned some useful tricks, if you have any comments or corrections, email link in the footer.
 
-<br />
-<br />
-<RandomPlant />
-<br />
-<br />
+<RandomPlant className='mt-8 mb-32' />
 
+<div className='text-neutral-500'>
 
-{/*
-
-<div id="benchmark-alloc" class="code-blocks">
-
-
-```javascript
-// 1. Object.keys()
-function cloneWithoutProps(object, excluded) {
-  const result = {}
-  const keys = Object.keys(object)
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i]
-    if (excluded.indexOf(key) >= 0) continue
-    result[key] = object[key]
-  }
-  return result;
-}
-```
-
-```javascript
-// 2. No allocations
-function cloneWithoutProps(object, excluded) {
-  const result = {}
-  for (const key in object) {
-    if (object.hasOwnProperty(key)) {
-      if (excluded.indexOf(key) >= 0) continue
-      result[key] = object[key]
-    }
-  }
-  return result;
-}
-```
-
-```javascript
-// test case
-const object = { a: 1, b: 2, c: 3, d: 4, e: 5 }
-const excluded = ['d', 'e']
-for (let i = 0; i < 1000000; i++) {
-  const result = cloneWithoutProps(object, excluded)
-}
-```
+If you've made it this far, consider visiting [The Castle](/castle).
 
 </div>
-
-<Benchmark
-  id="benchmark-alloc"
-  results={{"1. Object.keys()":{"runTime":-1023,"amountOfRounds":15,"percent":75},"2. No allocations":{"runTime":-1035,"amountOfRounds":20,"percent":100}}}
-  client:load
-/>
-
-For the same logic, we were able to save 25% of the cost simply by avoiding `Object.keys()`. This function by the way is what [babel desugars object destructuring into](https://github.com/babel/babel/pull/16357)! So if you destructured an object with 100 keys, not only were you making a copy of that object, but you were also allocating an array of a 100 keys. Hopefully it should be resolved by the time you read this.
-
-I'll note that avoiding allocations by using imperative code is the place where the performance vs readability tradeoff is the most apparent, so using imperative code to replace something as readable as this example below, requires consideration.
-
-```javascript
-const result =
-  Object.values(point)
-    .map(n => n * 2)
-    .filter(n => n % 2 === 0)
-    .reduce((a, n) => a + n, 0)
-
-// I'm not even going to translate it to imperative code, it would ruin
-// the beauty.
-```
-
-*/}
