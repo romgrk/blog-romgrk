@@ -972,7 +972,7 @@ If you've payed attention sooner, you will realize that the engine will speciali
 
 ### 11.2 Doubt your results
 
-If you've just optimized a function and it now runs 100x faster, doubt it. Try to disprove your results, try them in production mode, throw stuff at it.
+If you've just optimized a function and it now runs 100x faster, doubt it. Try to disprove your results, try it in production mode, throw stuff at it. Similarly, doubt also your tools. The mere fact of observing a benchmark with devtools can modify its behavior.
 
 ### 11.3 Pick your target
 
@@ -988,7 +988,7 @@ If you're profiling in the browser, make sure you use a clean and empty browser 
 
 ### 12.2 Sample vs structural profiling
 
-Browser profiling tools are sample-based profilers, which take a sample of your stack at regular intervals. This had a big disadvantage: very small but very frequent functions might be called between those samples, and might be very much underreported in the stack charts you'll get. Use Firefox devtools with a custom sample interval or Chrome devtools with CPU throttling to avoid this issue.
+Browser profiling tools are sample-based profilers, which take a sample of your stack at regular intervals. This had a big disadvantage: very small but very frequent functions might be called between those samples, and might be very much underreported in the stack charts you'll get. Use Firefox devtools with a custom sample interval or Chrome devtools with CPU throttling to mitigate this issue.
 
 ### 12.3 The tools of the trade
 
