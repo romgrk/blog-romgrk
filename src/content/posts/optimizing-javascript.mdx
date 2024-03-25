@@ -91,7 +91,7 @@ for (let i = 0; i < 1000000; i++) {
   Percentage results represent the number of operations completed within 1s, divided by the number of operations of the highest scoring case. Higher is better.
 </Aside>
 
-As you can see, the difference can be significant. The difference isn't necessarily due to the `strcmp` cost as engines can sometimes use a string pool and compare by reference, but it can also be because integers are usually passed by value in JS engines, whereas strings are always passed as pointers, and memory accesses are expensive (see section 5). In string heavy code, this can have a huge impact.
+As you can see, the difference can be significant. The difference isn't necessarily due to the `strcmp` cost as engines can sometimes use a string pool and compare by reference, but it's also due to the fact that integers are usually passed by value in JS engines, whereas strings are always passed as pointers, and memory accesses are expensive (see section 5). In string-heavy code, this can have a huge impact.
 
 For a real-world example, I was able to [make this JSON5 javascript parser run 2x faster](https://github.com/json5/json5/pull/278)* just by replacing string constants with numbers.  
 <small>*Unfortunately it wasn't merged, but that's how open-source is.</small>
