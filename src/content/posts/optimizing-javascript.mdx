@@ -376,7 +376,7 @@ This point requires a bit of low-level knowledge, but has implications even in j
 
 ### 5.1 Prefetching
 
-The first one is prefetching: it fetches more memory ahead of time, in the hope that it's the memory you'll be interested in. It always guesse that if you request one memory address, you'll be interested in the memory region that comes right after that. So **accessing data sequentially** is they key. In the following example, we can observe the impact of accessing memory in random order.
+The first one is prefetching: it fetches more memory ahead of time, in the hope that it's the memory you'll be interested in. It always guesse that if you request one memory address, you'll be interested in the memory region that comes right after that. So **accessing data sequentially** is the key. In the following example, we can observe the impact of accessing memory in random order.
 
 <div id="benchmark-prefetch" class="code-blocks">
 
