@@ -438,7 +438,7 @@ for (let i = 0; i < shuffledPoints.length; i++) { _ += shuffledPoints[i].x }
 
 #### What the eff should I do about this?
 
-This aspect is probably the hardest to put in practice, because javascript doesn't have a way of placing objects in memory. You cannot assume that objects created sequentially will stay at the same location because the garbage collector might move them around. There is one exception to that, and it's arrays of numbers, preferably `TypedArray` instances:
+This aspect is probably the hardest to put in practice, because javascript doesn't have a way of placing objects in memory, but you can use that knowledge to your advantage as in the example above, for example to operate on data before re-ordering or sorting it. You cannot assume that objects created sequentially will stay at the same location after some time because the garbage collector might move them around. There is one exception to that, and it's arrays of numbers, preferably `TypedArray` instances:
 
 ```javascript
 // from this
