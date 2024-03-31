@@ -300,7 +300,7 @@ const x = this.state.circle.center.point.x
 // at inlining these:
 function getX(p) { return p.x }
 const x = getX(p)
-// But it's not garanteed that they can. In particular if the function call
+// But it's not guaranteed that they can. In particular if the function call
 // isn't from a static function but comes from e.g. an argument:
 function Component({ point, getX }) {
   return getX(point)
