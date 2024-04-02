@@ -16,11 +16,11 @@ I have included runnable examples for all cases where it's possible. They show b
 
 ## 0. Avoid work
 
-This might sound evident, but it needs to be here because there can't be another first step to optimization: if you're trying to optimize, you should first look into avoiding work. This includes concepts like memoization, laziness and incremental computation. This would be applied differently depending on the context. In React for example, that would mean applying `memo()`, `useMemo()` and other applicable primitives.
+This might sound evident, but it needs to be here because there can't be another first step to optimization: if you're trying to optimize, you should first look into avoiding work. This includes concepts like memoization, laziness and incremental computation. This would be applied differently depending on the context. In React, for example, that would mean applying `memo()`, `useMemo()` and other applicable primitives.
 
 ## 1. Avoid string comparisons
 
-Javascript makes it easy to hide the real cost of string comparisons. If you need to compare strings in C, you'd use the `strcmp(a, b)` function. Javascript uses `===` instead, so you don't see the `strcmp`. But it's there, and a string comparison will usually (but not always) require comparing each of the characters in the string with the ones in the other string; string comparison is `O(n)`. One common javascript pattern to avoid is strings-as-enums. But with the advent of typescript this should be easily avoidable, as
+Javascript makes it easy to hide the real cost of string comparisons. If you need to compare strings in C, you'd use the `strcmp(a, b)` function. Javascript uses `===` instead, so you don't see the `strcmp`. But it's there, and a string comparison will usually (but not always) require comparing each of the characters in the string with the ones in the other string; string comparison is `O(n)`. One common JavaScript pattern to avoid is strings-as-enums. But with the advent of TypeScript this should be easily avoidable, as
 enums are integers by default.
 
 <div class="code-blocks-row">
@@ -300,7 +300,7 @@ const x = this.state.circle.center.point.x
 // at inlining these:
 function getX(p) { return p.x }
 const x = getX(p)
-// But it's not garanteed that they can. In particular if the function call
+// But it's not guaranteed that they can. In particular if the function call
 // isn't from a static function but comes from e.g. an argument:
 function Component({ point, getX }) {
   return getX(point)
@@ -376,7 +376,7 @@ This point requires a bit of low-level knowledge, but has implications even in j
 
 ### 5.1 Prefetching
 
-The first one is prefetching: it fetches more memory ahead of time, in the hope that it's the memory you'll be interested in. It always guesse that if you request one memory address, you'll be interested in the memory region that comes right after that. So **accessing data sequentially** is the key. In the following example, we can observe the impact of accessing memory in random order.
+The first one is prefetching: it fetches more memory ahead of time, in the hope that it's the memory you'll be interested in. It always guesses that if you request one memory address, you'll be interested in the memory region that comes right after that. So **accessing data sequentially** is the key. In the following example, we can observe the impact of accessing memory in random order.
 
 <div id="benchmark-prefetch" class="code-blocks">
 
@@ -453,7 +453,7 @@ For a more detailed example, [see this link](https://mrale.ph/blog/2018/02/03/ma
 
 ### 5.2 Caching in L1/2/3
 
-The second optimization CPUs use is the L1/L2/L3 caches: those are like faster RAMs, but they are also more expensive, so they are much smaller. The contain RAM data, but act as an LRU cache. Data comes in while it's "hot" (being worked on), and written back to the main RAM when new working data needs the space. So the key here is **use as few data as possible to keep you working dataset in the fast caches**. In the following example, we can observe what are the effects of busting each of the successive caches.
+The second optimization CPUs use is the L1/L2/L3 caches: those are like faster RAMs, but they are also more expensive, so they are much smaller. They contain RAM data, but act as an LRU cache. Data comes in while it's "hot" (being worked on), and is written back to the main RAM when new working data needs the space. So the key here is **use as little data as possible to keep your working dataset in the fast caches**. In the following example, we can observe what are the effects of busting each of the successive caches.
 
 <div id="benchmark-caches" class="code-blocks">
 
@@ -666,7 +666,7 @@ Obviously the usual warnings about `eval()` apply: don't trust user input, sanit
 
 We've already seen above how strings are more expensive than they appear. Well I have kind of a good news/bad news situation here, which I'll announce in the only logical order (bad first, good second): strings are more complex than they appear, but they can also be quite efficient used well.
 
-String operations are a core part of javascript due to its context. To optimize string-heavy code, engines had to be creative. And by that I mean, they had to represent the `String` object with multiple string representation in C++, depending on the use case. There are two general cases you should worry about, because they hold true for V8 (the most common engine by far), and generally also in other engines.
+String operations are a core part of JavaScript due to its context. To optimize string-heavy code, engines had to be creative. And by that I mean, they had to represent the `String` object with multiple string representation in C++, depending on the use case. There are two general cases you should worry about, because they hold true for V8 (the most common engine by far), and generally also in other engines.
 
 First, strings concatenated with `+` don't create a copy of the two input strings. The operation creates a pointer to each substring. If it was in typescript, it would be something like this:
 
@@ -893,7 +893,7 @@ for (let i = 0; i < 100; i++) {
 This sort of optimization can give you moderate improvements, but those will add up. They are a nice addition to more crucial optimizations, like shapes and memory I/O. But note that specialization can turn against you if your conditions change, so be careful when applying this one.
 
 <Aside title="Branch prediction and branchless code">
-  Removing branches from your code can be incredibly efficient for performance. For more details on what a branch predictor is, read the classic stackoverflow answer [Why is processing a sorted array faster](https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array).
+  Removing branches from your code can be incredibly efficient for performance. For more details on what a branch predictor is, read the classic Stack Overflow answer [Why is processing a sorted array faster](https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array).
 </Aside>
 
 <br />
@@ -976,7 +976,7 @@ If you've just optimized a function and it now runs 100x faster, doubt it. Try t
 
 ### 11.3 Pick your target
 
-Different engines will optimize certain patterns better or worst than others. You should benchmark for the engine(s) that are relevant to you, and prioritize which one is more important. [Here's a real-world example](https://github.com/babel/babel/pull/16357) in Babel where improving V8 means decreasing JSC's performance.
+Different engines will optimize certain patterns better or worse than others. You should benchmark for the engine(s) that are relevant to you, and prioritize which one is more important. [Here's a real-world example](https://github.com/babel/babel/pull/16357) in Babel where improving V8 means decreasing JSC's performance.
 
 ## 12. Profiling & tools
 
@@ -994,7 +994,7 @@ Browser profiling tools are sample-based profilers, which take a sample of your 
 
 Beyond the regular browser devtools, it may help to be aware of these options:
 
-- Chrome devtools have quite a few experimental flag that can help you figure out why things are slow. The style invalidation tracker is invaluable when you need to debug style/layout recalculations in the browser.  
+- Chrome devtools have quite a few experimental flags that can help you figure out why things are slow. The style invalidation tracker is invaluable when you need to debug style/layout recalculations in the browser.  
   https://github.com/iamakulov/devtools-perf-features
 
 - The deoptexplorer-vscode extension allows you to load V8/chromium log files to understand when your code is triggering deoptimizations, such as when you pass different shapes to a function. You don't need the extension to read log files, but it makes the experience much more pleasant.  
