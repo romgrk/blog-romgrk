@@ -4,7 +4,6 @@ description: ''
 pubDate: 'Sep 2 2024'
 sidebar: { display: true, depth: 2 }
 rating: 8
-draft: true
 ---
 import Aside from '../../components/Aside.astro'
 import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
@@ -23,7 +22,9 @@ In javascript the usual way to store RGBA colors would be something like this:
 const color = { red: 0, green: 0, blue: 0, alpha: 1.0 }
 ```
 
-This representation is idiomatic and readable, but it also means allocating a new heap object for each color. Knowing that RGBA colors go from `#00000000` to `#ffffffff` (or in others words, the numbers from `0x0000000` to `0xffffffff`) and that it's 32 bits of data, we only really need a single number value to encode those few bits. Lucky us, that's precisely the number we have available through javascript bitwise operators:
+This representation is idiomatic and readable, but it also implies allocating a new heap object for each color. Knowing that RGBA colors go from `#00000000` to `#ffffffff` (or in others words, the numbers from `0x0000000` to `0xffffffff`) and that it's 32 bits of data, we only really just need a single number value to encode those few bits.
+
+Lucky us, that's precisely the amount we have available through javascript bitwise operators:
 
 ```javascript
 const color =
@@ -78,7 +79,7 @@ for (let i = 0; i < 100_000; i++) {
 />
 
 
-It's interesting to take a look at the stack traces for that benchmark as well. On the left is the `object` representation case, and on the right the `number` one. As we can see, the `object` one is constantly creating pressure for the garbage collector—each of those ticks is a "Minor GC" entry. Creating objects is expensive!
+It's interesting to take a look at the stack traces for that benchmark as well. On the left is the `object` representation case, and on the right the `number` one. As we can see, the `object` one is constantly creating pressure for the garbage collector—each of those ticks is a "Minor GC" entry. **Creating objects is expensive!**
 
 ![Stack traces for the object vs number benchmark](/color-bits-stack.png)
 *Stack traces for the object vs number benchmark*
@@ -122,9 +123,9 @@ function cast(int32Value) {
 
 As a reminder, all bitwise operators turn their values into `int32` numbers, *except* for `>>>` which is the "unsigned right shift" operation and the only one that operates on `uint32` values.
 
-So I was quite unhappy about adding more instructions, but hey, at least it's still all bitwise operations on numbers, which are pretty cheap.
+So I was quite unhappy about adding more instructions, but hey, at least it's still all bitwise operations on numbers, which are pretty cheap. Right?
 
-But the more I benchmarked, the more I found that solution to be unsatisfying. The problem isn't merely the additional operation, it's also that some particular engine applies a particular performance optimization that speeds up numbers up to... the 32-bits signed range. Namely, V8, the one that runs on 70% of browsing devices, and that powers NodeJS.
+Well the more I benchmarked, the more I found that solution to be unsatisfying. The problem isn't merely the additional operation, it's also that some particular engine applies a particular performance optimization that speeds up numbers up to... the 32-bits signed range. Namely, V8, the one that runs on 70% of browsing devices, and that powers NodeJS. So as soon as a color would overflow the `int32` range (in other words, any color greater than or equal to `0x80000000`), the whole codebase would slow down by a substantial factor! Red-ish colors were more expensive than blue-ish or green-ish colors, and it didn't sit well with me. So let's dive into what's happening.
 
 #### Number representation in V8
 
@@ -132,7 +133,7 @@ But the more I benchmarked, the more I found that solution to be unsatisfying. T
   I will be assuming a 64-bits architecture because that's most devices that run a JS engine today, but you can get the full picture in https://v8.dev/blog/pointer-compression.
 </Aside>
 
-In a common device, passing values up to 64-bits is cheap because you can pass the value through CPU registers directly—their length is 64-bits. Values or objects above that size must be stored in memory, and passed as a (64-bits) pointer to that location. And pointers normally should make up all of JS values, because the engine also needs to scan the heap for pointers to figure out which objects are not referenced anymore and can be garbage collected. If there were numbers mixed with pointers, the GC wouldn't be able to know if the value is a pointer or a number.
+In a common device, passing values up to 64-bits is cheap because you can pass the value through CPU registers directly—their length is 64-bits. Values or objects above that size must be stored in memory, and passed as a (64-bits) pointer to that location. And pointers normally should make up all of JS values, because the garbage collector also needs to scan the heap for pointers to figure out which objects are not referenced anymore and can be freed. If there were numbers mixed with pointers, the GC wouldn't be able to know if the value is a pointer or a number.
 
 But 64-bits of pointer location, that's <abbr title="18,446,744,073,709,552,000">a lot</abbr> of bytes, and maybe we don't really need all those addresses. So V8 says we'll use one of those bits to tag if the value is a pointer or a number, and if it's a number, we'll store 32-bits of data in there, and we'll call that a "Smi" because it's a beautiful name.
 
@@ -167,17 +168,41 @@ This should be taken with a grain of salt because it's a microbenchmark, but it 
 
 #### Number representation in JSC/SpiderMonkey
 
-Both engines use variations of a technique called NaN-boxing. Double values, aka `float64` or `f64` as they're called in pragmatic languages, are what the EcmaScript spec defines as `number`, and they are encoded in 64-bits as such:
+Both engines use variations of a technique called NaN-boxing. Double values, also known as `float64` or `f64` in more pragmatic languages, or IEEE-754 in technical terms, is what the EcmaScript spec defines as `number`, and they are encoded in 64-bits as such:
 
 ```text
        1 bit sign
       |-|-- 11 bits ---|------------ 52 bits ---------------|
-      |±|___exponent___|_______mantissa_(aka_value)_________|
+      |±|___exponent___|_____________mantissa_______________|
 ```
 
-The neat trick is, double encoding defines `NaN` as any 64-bits pattern where the exponent bits are all set to `1`. That means there's `2^53 - 2` values that all encode `NaN`. Instead of wasting those values, the engine can pick a single way to represent `NaN`, and use the rest of those bits to put pointers, integers, etc.
+<Aside title="IEEE-755 in details">
 
-As a sidenote, this is also the reason why `Number.MAX_SAFE_INTEGER` equals `2^53 - 1`, that's as much precision as double-encoding allows. The exponent uses the 11 other bits that make it to a 64 bits total.
+The formula to turn those bits into a number is the following one:
+```javascript
+  Math.pow(-1, sign) * Math.pow(2, 1023 - exponent) * (1 + mantissa)
+```
+
+<br />
+
+And for an example, this is how `1` is represented in f64 encoding:
+
+```text
+      0_____01111111111______________000000000000...00000000000000
+ (-1)^0  *  2^(1023 - 1023)  *  (1 + 0)
+     1   *  1                *   1
+   = 1
+```
+<br />
+
+[Interactive visualization](https://bartaz.github.io/ieee754-visualization/) | [Wikipedia](https://en.wikipedia.org/wiki/Double-precision_floating-point_format)
+
+</Aside>
+
+The neat trick is, `float64` encoding defines `NaN` as any 64-bits pattern where the exponent bits are all set to `1` and the mantissa is non-zero. So for example, both `0b0_11111111111_1000...` and `0b0_11111111111_0100...` represent `NaN`, and so forth. Instead of wasting those values, the engine can pick a single way to represent `NaN`, and use the rest of those bits to put pointers, integers, etc.
+
+As a sidenote, this is also the reason why `Number.MAX_SAFE_INTEGER` equals `2^53 - 1`, that's as much precision as `float64` allows. The exponent uses the 11 other bits that make it to a 64 bits total.
+
 
 But I'm digressing, so let's go back to the issue.
 
@@ -185,7 +210,7 @@ But I'm digressing, so let's go back to the issue.
 
 As it became apparent that with the language and all the engines conspiring against me, I wasn't going to get any `uint32` anytime soon. That's when I realized the very simple solution that had been there all along: **do nothing**.
 
-If your CS classes were long ago or never had formal classes on the topic, let me recap how negative numbers and two's complement work. Taking a single byte (a `uint8` value) for simplicity, here is how each bit relates to its value:
+Let me recap how negative numbers and two's complement work. Taking a single byte (a `uint8` value) for simplicity, here is how each bit relates to its value:
 
 ```text
 Index: |   8  |  7  |  6  |  5  |  4  |  3  |  2  |  1  | 
@@ -205,36 +230,33 @@ And a last one, for `-1`:
 
 <BytePattern initialValue='11111111' client:load />
 
-So why pick a scheme like two's complement instead something more simple? After all, double encoding uses the first bit to signal `+/-`, isn't that more simple? The last bit pattern here might have given you a clue. The idea behind two's complement is that for some operations like say addition, we don't need separate machine instructions for signed & unsigned values. The bits stay the same, but their interpretation changes. So for example, if you subtract `1` from `0b00000000`, the bits would be `0b11111111` in both signed mode (where the value is `255`) and unsigned mode (where the value is `-1`). Using this convention simplifies CPUs, which in turns allows them to be leaner & faster. This means that when you compile something with a data type like `u32` or `i32`, the type disappear after compilation and the CPU only sees untyped bits. Some operations still require special handling for signed/unsigned numbers, but in those cases the instruction itself will be typed, not the data. For example, `x86` has the `MUL` instruction for unsigned multiplication and `IMUL` for signed multiplication.
+So why pick a scheme like two's complement instead something more simple? After all, `float64` encoding uses the first bit to signal `+/-`, isn't that more simple? The last bit pattern here might have given you a clue. The idea behind two's complement is that for some operations like say addition, we don't need separate machine instructions for signed & unsigned values. The bits stay the same, but their interpretation changes. So for example, if you subtract `1` from `0b00000000`, the bits would be `0b11111111` in both signed mode (where the value is `255`) and unsigned mode (where the value is `-1`). Using this convention simplifies CPUs, which in turns allows them to be leaner & faster. This means that when you compile in a native language a data type like `u32` or `i32`, the type disappear after compilation and the CPU only sees untyped bits. Some operations still require special handling for signed/unsigned numbers, but in those cases the instruction itself will be typed, not the data. For example, `x86` has the `MUL` instruction for unsigned multiplication and `IMUL` for signed multiplication.
 
 I hope this all explains my previous epiphany about **doing nothing**. Our bits were never mangled by bitwise operators, the bits were where they were supposed to be all along. If you `0xff << 24`, the underlying bit pattern will still be `0b111111110000....0000` regardless if the number is interpreted as signed or unsigned.
 
-I think it's a very normal thing to reach for `uint32`, it's the logical representation for 4 packed bytes. But in the limited context of javascript, going for what is available instead is the better option. I've seen other libraries as well do the same mistake, for example I was reading [react-spring's color handling code](https://github.com/pmndrs/react-spring/blob/fd65b605b85c3a24143c4ce9dd322fdfca9c66be/packages/shared/src/normalizeColor.ts#L48-L49) the other day, and I saw that they too had gone for the cast (`>>> 0`) to turn their values into the more logical `uint32` format. But introducing all those non-Smi values all over the place incurs a performance penalty that propagates through any function that handles those values, and in a color manipulation library, that's all of the functions.
+I think it's a very normal thing to reach for `uint32`, it's the logical representation for 4 packed bytes. But in the limited context of javascript, going for what is available instead is the better option. I've seen other libraries as well do the same mistake, for example I was reading [react-spring's color handling code](https://github.com/pmndrs/react-spring/blob/fd65b605b85c3a24143c4ce9dd322fdfca9c66be/packages/shared/src/normalizeColor.ts#L48-L49) the other day, and I saw that they too had gone for the cast (`>>> 0`) to turn their values into the more logical `uint32` format. But introducing all those `int32` values all over the place incurs a performance penalty that propagates through any function that handles those values, and in a color manipulation library, that's all of the functions.
 
 
 <RandomPlant className='mt-8 mb-16' />
 
 ## 2. Parsing
 
-Satisfied with the color representation, I went on to look at the next most expensive operation in a color library. I won't go into details into formats others than `#rrggbbaa` because for the other ones (`rgba()`, `hsl()`, `color(display-p3, )`, etc), anything other than regex parsing is unbeatable. Yes I tried a standard recursive descent top-down parser, unfortunaly this is javascript, so any work that can be deferred to the engine is better left to the engine.
+Satisfied with the color representation, I went on to look at the next most expensive operation in a color library. I won't go into details into formats others than `#rrggbbaa` because for the other ones (`rgba()`, `hsl()`, `color(display-p3, )`, etc), anything other than regex parsing was suboptimal. Yes I tried a standard recursive descent top-down parser, unfortunaly this is javascript, and that sort of work is better left to the engine.
 
 However, I had a feeling that hexadecimal parsing in particular could be improved.
-
-<Aside title="Note">
-  The examples are RGB instead of RGBA for terseness, but everything applies the same way for RGBA.
-</Aside>
 
 Let's take for example a naive regex approach:
 
 ```javascript
-const pattern = /#(..)(..)(..)/
+const pattern = /#(..)(..)(..)(..)/
 
 function parseHex_regex(color) {
   const m = color.match(pattern)
   return (
-    (parseInt(m[1], 16) << 16) |
-    (parseInt(m[2], 16) <<  8) |
-    (parseInt(m[3], 16) <<  0)
+    (parseInt(m[1], 16) << 24) |
+    (parseInt(m[2], 16) << 16) |
+    (parseInt(m[3], 16) <<  8) |
+    (parseInt(m[4], 16) <<  0)
   )
 }
 ```
@@ -246,35 +268,39 @@ So a good iteration on that to avoid the fat result array would be something lik
 ```javascript
 function parseHex_slice(color) {
   return (
-    (parseInt(color.slice(1, 3), 16) << 16) |
-    (parseInt(color.slice(3, 5), 16) <<  8) |
-    (parseInt(color.slice(5, 7), 16) <<  0)
+    (parseInt(color.slice(1, 3), 16) << 24) |
+    (parseInt(color.slice(3, 5), 16) << 16) |
+    (parseInt(color.slice(5, 7), 16) <<  8) |
+    (parseInt(color.slice(7, 9), 16) <<  0)
   )
 }
 ```
 
-But the problem is that even if we got rid of the fat result array, the `.slice()` calls are still allocating 3 strings, and those strings are going to create more GC pauses.
+But the problem is that even if we got rid of the fat result array, the `.slice()` calls are still allocating 4 strings, and those strings are going to create more GC pauses.
 
 The only solution to extract characters of a string as numbers rather than strings is `.charCodeAt()`, so that's what I picked to use for my fast parsing implementation. There are two techniques that I explored to turn those characters into their hexadecimal values, both of which I found on [Daniel Lemire's blog](https://lemire.me/blog/2019/04/17/parsing-short-hexadecimal-strings-efficiently/) (where I somehow always end up when researching obscure optimization problems). The first one is to use a mathematical function, and the second one is to use a lookup array. Here is a javascript port of both:
 
 ```javascript
-// Char code to its hex value
+// Transform char code to its hexadecimal value
 function x(c) { return (c & 0xf) + 9 * (c >> 6) }
 
 function parseHex_function(color) {
   const r = x(color.charCodeAt(1)) << 4 | x(color.charCodeAt(2))
   const g = x(color.charCodeAt(3)) << 4 | x(color.charCodeAt(4))
   const b = x(color.charCodeAt(5)) << 4 | x(color.charCodeAt(6))
+  const a = x(color.charCodeAt(7)) << 4 | x(color.charCodeAt(8))
   return (
-    (r << 16) |
-    (g <<  8) |
-    (b <<  0)
+    (r << 24) |
+    (g << 16) |
+    (b <<  8) |
+    (a <<  0)
   )
 }
 ```
 
 ```javascript
-// Char code to its hex value, but as a table
+// Transform char code to its hexadecimal value,
+// but as a lookup array.
 const _ = 0
 const X = [
  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,
@@ -297,10 +323,12 @@ function parseHex_table(color) {
   const r = X[color.charCodeAt(1)] << 4 | X[color.charCodeAt(2)]
   const g = X[color.charCodeAt(3)] << 4 | X[color.charCodeAt(4)]
   const b = X[color.charCodeAt(5)] << 4 | X[color.charCodeAt(6)]
+  const a = X[color.charCodeAt(7)] << 4 | X[color.charCodeAt(8)]
   return (
-    (r << 16) |
-    (g <<  8) |
-    (b <<  0)
+    (r << 24) |
+    (g << 16) |
+    (b <<  8) |
+    (a <<  0)
   )
 }
 ```
@@ -313,35 +341,40 @@ With all that setup, let's benchmark to see which one is the fastest:
 
 ```javascript
 // setup
-const pattern = /#(..)(..)(..)/
+const pattern = /#(..)(..)(..)(..)/
 
 function parseHex_regex(color) {
   const m = color.match(pattern)
   return (
-    (parseInt(m[1], 16) << 16) |
-    (parseInt(m[2], 16) <<  8) |
-    (parseInt(m[3], 16) <<  0)
+    (parseInt(m[1], 16) << 24) |
+    (parseInt(m[2], 16) << 16) |
+    (parseInt(m[3], 16) <<  8) |
+    (parseInt(m[4], 16) <<  0)
   )
 }
 
 function parseHex_slice(color) {
   return (
-    (parseInt(color.slice(1, 3), 16) << 16) |
-    (parseInt(color.slice(3, 5), 16) <<  8) |
-    (parseInt(color.slice(5, 7), 16) <<  0)
+    (parseInt(color.slice(1, 3), 16) << 24) |
+    (parseInt(color.slice(3, 5), 16) << 16) |
+    (parseInt(color.slice(5, 7), 16) <<  8) |
+    (parseInt(color.slice(7, 9), 16) <<  0)
   )
 }
 
 // Char code to its hex value
 function x(c) { return (c & 0xf) + 9 * (c >> 6) }
+
 function parseHex_function(color) {
   const r = x(color.charCodeAt(1)) << 4 | x(color.charCodeAt(2))
   const g = x(color.charCodeAt(3)) << 4 | x(color.charCodeAt(4))
   const b = x(color.charCodeAt(5)) << 4 | x(color.charCodeAt(6))
+  const a = x(color.charCodeAt(7)) << 4 | x(color.charCodeAt(8))
   return (
-    (r << 16) |
-    (g <<  8) |
-    (b <<  0)
+    (r << 24) |
+    (g << 16) |
+    (b <<  8) |
+    (a <<  0)
   )
 }
 
@@ -363,14 +396,17 @@ const X = [
  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,
  _,  _,  _,  _,  _,  _,  _,  _,  _
 ]
+
 function parseHex_table(color) {
   const r = X[color.charCodeAt(1)] << 4 | X[color.charCodeAt(2)]
   const g = X[color.charCodeAt(3)] << 4 | X[color.charCodeAt(4)]
   const b = X[color.charCodeAt(5)] << 4 | X[color.charCodeAt(6)]
+  const a = X[color.charCodeAt(7)] << 4 | X[color.charCodeAt(8)]
   return (
-    (r << 16) |
-    (g <<  8) |
-    (b <<  0)
+    (r << 24) |
+    (g << 16) |
+    (b <<  8) |
+    (a <<  0)
   )
 }
 ```
@@ -387,28 +423,28 @@ const colors = new Array(100)
 ```javascript
 // 1. regex
 for (let i = 0; i < N; i++) {
-  colors[i % 100] = parseHex_regex('#599eff')
+  colors[i % 100] = parseHex_regex('#599eff80')
 }
 ```
 
 ```javascript
 // 2. slice
 for (let i = 0; i < N; i++) {
-  colors[i % 100] = parseHex_slice('#599eff')
+  colors[i % 100] = parseHex_slice('#599eff80')
 }
 ```
 
 ```javascript
 // 3. char + function
 for (let i = 0; i < N; i++) {
-  colors[i % 100] = parseHex_function('#599eff')
+  colors[i % 100] = parseHex_function('#599eff80')
 }
 ```
 
 ```javascript
 // 4. char + table
 for (let i = 0; i < N; i++) {
-  colors[i % 100] = parseHex_table('#599eff')
+  colors[i % 100] = parseHex_table('#599eff80')
 }
 ```
 
@@ -416,7 +452,7 @@ for (let i = 0; i < N; i++) {
 
 <Benchmark
   selector="#benchmark-parse"
-  results={{"1. regex":{"runTime":-1002,"amountOfRounds":114,"percent":0.92},"2. slice":{"runTime":-1003,"amountOfRounds":175,"percent":1.42},"3. char + function":{"runTime":-1000,"amountOfRounds":12358,"percent":100},"4. char + table":{"runTime":-1000,"amountOfRounds":4658,"percent":37.69}}}
+  results={{"1. regex":{"runTime":-1010,"amountOfRounds":91,"percent":0.73},"2. slice":{"runTime":-1003,"amountOfRounds":135,"percent":1.08},"3. char + function":{"runTime":-1000,"amountOfRounds":12499,"percent":100},"4. char + table":{"runTime":-1000,"amountOfRounds":3888,"percent":31.11}}}
   client:load
 />
 
@@ -426,17 +462,17 @@ As you can see, both allocation-less versions run *much* faster than the naive o
 
 ## 3. Formatting
 
-And for the final part, I looked into how to output those values as strings efficiently. In an ideal setting, color values wouldn't need to be turned back to strings, but this is unavoidable as most APIs javascript interacts with in the browser are string-based.
+And for the final part, I looked into how to output those values as strings efficiently. In an ideal setting, color values wouldn't need to be turned back to strings, but this is unavoidable as most APIs javascript interacts with are string-based.
 
 The simple implementation I went for initially was the following one:
 
 ```javascript
 function format_simple(color) {
-  return `#${color.toString(16).padStart(6, '0')}`
+  return `#${color.toString(16).padStart(8, '0')}`
 }
 ```
 
-But I wasn't happy with the results. One thing I wanted to avoid is the temporary string allocation, the one that's returned by `.toString(16)`. I also wanted to avoid as much as possible calling javascript string functions like `toString` or `padStart`. I usually find that such functions are less efficient than pure-javascript ones, but it could be for a variety of reasons (e.g. the spec requiring expensive checks/conversions) that I don't know enough about to explain.
+But I wasn't happy with the results. One thing I wanted to avoid is the temporary string allocations, the ones returned by `toString` and `padStart`. I also wanted to avoid as much as possible calling javascript string functions like those ones because I usually find that them to be less efficient than pure-javascript ones. It could be for a variety of reasons (e.g. the spec requiring expensive checks/conversions) but I don't know enough about to explain it.
 
 So I pulled inspiration from the previously presented function from Daniel's blog, and went for a lookup array that converts hexadecimal values to their string representation:
 
@@ -449,6 +485,7 @@ const X =
 function format_table(color) {
   return (
     '#' +
+    X[color >> 24 & 0xff] +
     X[color >> 16 & 0xff] +
     X[color >>  8 & 0xff] +
     X[color >>  0 & 0xff]
@@ -465,9 +502,10 @@ And here is a final benchmark to validate that we're indeed running faster:
   ```javascript
   // setup
   function format_simple(color) {
-    return `#${color.toString(16).padStart(6, '0')}`
+    return `#${color.toString(16).padStart(8, '0')}`
   }
 
+  // ['00', '01', ..., 'fe', 'ff']
   const X =
     Array.from({ length: 256 })
       .map((_, i) => i.toString(16).padStart(2, '0'))
@@ -475,6 +513,7 @@ And here is a final benchmark to validate that we're indeed running faster:
   function format_table(color) {
     return (
       '#' +
+      X[color >> 24 & 0xff] +
       X[color >> 16 & 0xff] +
       X[color >>  8 & 0xff] +
       X[color >>  0 & 0xff]
@@ -509,7 +548,7 @@ for (let i = 0; i < N; i++) {
 
 <Benchmark
   selector="#benchmark-format"
-  results={{"1. simple":{"runTime":-1002,"amountOfRounds":256,"percent":46.97},"2. table":{"runTime":-1000,"amountOfRounds":545,"percent":100}}}
+  results={{"1. simple":{"runTime":-1004,"amountOfRounds":210,"percent":45.55},"2. table":{"runTime":-1001,"amountOfRounds":461,"percent":100}}}
   client:load
 />
 
@@ -517,7 +556,7 @@ for (let i = 0; i < N; i++) {
 
 ## 4. Benchmarks
 
-So with all that completed let's see how it compares to other existing color libraries on NPM. I re-used the benchmarking code from `colord` and slightly modified it to showcase how it performs for the case it was optimized for (hexadecimal format strings), so the [benchmark code](https://github.com/romgrk/color-bits/tree/master/benchmarks) consists of parsing a hex color string, modifying its opacity, and converting it back to a hex color string.
+So with all that completed let's see how it compares to other existing color libraries on NPM. I re-used the benchmarking code from `colord` and slightly modified it to showcase how it performs for the case it was optimized for (hexadecimal strings), so the [benchmark code](https://github.com/romgrk/color-bits/tree/master/benchmarks) consists of parsing a hex color string, modifying its opacity, and converting it back to a hex color string.
 
 | Library        | Operations/sec | Relative speed |
 | ---            | --:            | --:            |
@@ -527,7 +566,7 @@ So with all that completed let's see how it compares to other existing color lib
 | chroma-js      | 846 924        | 96.31% slower  |
 | color          | 799 262        | 96.52% slower  |
 
-Tada ✨ About 5x faster than the 2nd place, `colord`, which had the previous claim to the fastest color library.
+Tada ✨ About 5x faster than the 2nd place, `colord`, which had the previous claim to the fastest color library. I haven't included the benchmark for non `#rrggbbaa` colors like `rgb()` or `hsl()`, but `color-bits` is still around 2x faster than the 2nd place even in those cases.
 
 <RandomPlant className='mt-8 mb-16' />
 
