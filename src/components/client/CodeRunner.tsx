@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Dialog } from '@headlessui/react'
 import outdent from 'outdent'
 import './CodeRunner.css'
@@ -8,6 +8,7 @@ type Props = {
   codeLines?: number
   consoleLines?: number
   context?: string,
+  autoRun?: boolean,
   transformOutput?: (output: string) => string,
 }
 
@@ -23,7 +24,7 @@ export default function CodeRunner(props: Props) {
   const console = {
     log: (message: string) => {
       const text = typeof message === 'string' ? message : JSON.stringify(message)
-      setOutput(output => output + text + '\n')
+      setOutput(output => output + '> ' + text + '\n')
     }
   }
 
@@ -41,6 +42,12 @@ export default function CodeRunner(props: Props) {
     if (props.transformOutput)
       setOutput(props.transformOutput)
   }
+
+  useEffect(() => {
+    if (props.autoRun) {
+      run()
+    }
+  }, [props.autoRun])
 
   return (
     <div className='code-runner'>

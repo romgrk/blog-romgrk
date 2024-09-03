@@ -7,7 +7,7 @@ rating: 10
 ---
 import Aside from '../../components/Aside.astro'
 import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
-import { Benchmark } from './optimizing-javascript.tsx'
+import Benchmark from '../../components/client/Benchmark.tsx'
 
 
 I often feel like javascript code in general runs much slower than it could, simply because it's not optimized properly. Here is a summary of common optimization techniques I've found useful. Note that the tradeoff for performance is often readability, so the question of when to go for performance versus readability is a question left to the reader. I'll also note that talking about optimization necessarily requires talking about benchmarking. Micro-optimizing a function for hours to have it run 100x faster is meaningless if the function only represented a fraction of the actual overall runtime to start with. If one is optimizing, the first and most important step is benchmarking. I'll cover the topic in the later points. Be also aware that micro-benchmarks are often flawed, and that may include those presented here. I've done my best to avoid those traps, but don't blindly apply any of the points presented here without benchmarking.
@@ -82,7 +82,7 @@ for (let i = 0; i < 1000000; i++) {
 </div>
 
 <Benchmark
-  id="benchmark-compare"
+  selector="#benchmark-compare"
   results={{"1. string compare":{"runTime":-1000,"amountOfRounds":828,"percent":50.35},"2. int compare":{"runTime":-1000,"amountOfRounds":2137,"percent":100}}}
   client:load
 />
@@ -198,7 +198,7 @@ for (let i = 0; i < 1000000; i++) {
 </div>
 
 <Benchmark
-  id="benchmark-shape"
+  selector="#benchmark-shape"
   results={{"1. monomorphic":{"runTime":-1000,"amountOfRounds":1247,"percent":100},"2. polymorphic":{"runTime":-1003,"amountOfRounds":163,"percent":13.07},"3. megamorphic":{"runTime":-1008,"amountOfRounds":51,"percent":4.09}}}
   client:load
 />
@@ -262,7 +262,7 @@ for (let i = 0; i < numbers.length; i++) {
 </div>
 
 <Benchmark
-  id="benchmark-array-methods"
+  selector="#benchmark-array-methods"
   results={{"1. functional":{"runTime":-1002,"amountOfRounds":303,"percent":36.51},"2. imperative":{"runTime":-1000,"amountOfRounds":830,"percent":100}}}
   client:load
 />
@@ -330,7 +330,7 @@ for (let _ = 0, i = 0; i < 100_000; i++) { _ += x }
 </div>
 
 <Benchmark
-  id="benchmark-proxy"
+  selector="#benchmark-proxy"
   results={{"1. proxy access":{"runTime":-1000,"amountOfRounds":659,"percent":2.8},"2. direct access":{"runTime":-1000,"amountOfRounds":23544,"percent":100}}}
   client:load
 />
@@ -364,7 +364,7 @@ for (let i = 0; i < 100_000; i++) {
 </div>
 
 <Benchmark
-  id="benchmark-object"
+  selector="#benchmark-object"
   results={{"1. nested access":{"runTime":-1000,"amountOfRounds":9871,"percent":42.08},"2. direct access":{"runTime":-1000,"amountOfRounds":23460,"percent":100}}}
   client:load
 />
@@ -431,7 +431,7 @@ for (let i = 0; i < shuffledPoints.length; i++) { _ += shuffledPoints[i].x }
 </div>
 
 <Benchmark
-  id="benchmark-prefetch"
+  selector="#benchmark-prefetch"
   results={{"2. random":{"runTime":-1000,"amountOfRounds":226,"percent":26.22},"1. sequential":{"runTime":-1000,"amountOfRounds":862,"percent":100}}}
   client:load
 />
@@ -501,7 +501,7 @@ let r = 0; for (let i = 0; i < 100000; i++) { r += buffer[random(RAM)] }
 </div>
 
 <Benchmark
-  id="benchmark-caches"
+  selector="#benchmark-caches"
   results={{"1. L1":{"runTime":-1000,"amountOfRounds":1800,"percent":100},"2. L2":{"runTime":-1000,"amountOfRounds":1405,"percent":78.06},"3. L3":{"runTime":-1000,"amountOfRounds":1186,"percent":65.89},"4. RAM":{"runTime":-1002,"amountOfRounds":528,"percent":29.33}}}
   client:load
 />
@@ -557,7 +557,7 @@ Object.values(byId).forEach(user => { _ += user.id })
 </div>
 
 <Benchmark
-  id="benchmark-large-object"
+  selector="#benchmark-large-object"
   results={{"1. [] access":{"runTime":-1000,"amountOfRounds":49173,"percent":43.18},"2. direct access":{"runTime":-1000,"amountOfRounds":113887,"percent":100}}}
   client:load
 />
@@ -597,7 +597,7 @@ Object.values(byId).forEach(user => { _ += user.id })
 </div>
 
 <Benchmark
-  id="benchmark-large-object-larger"
+  selector="#benchmark-large-object-larger"
   results={{"1. [] access":{"runTime":-1005,"amountOfRounds":229,"percent":20.67},"2. direct access":{"runTime":-1000,"amountOfRounds":1108,"percent":100}}}
   client:load
 />
@@ -651,7 +651,7 @@ createMessages(key, values)
 </div>
 
 <Benchmark
-  id="benchmark-eval"
+  selector="#benchmark-eval"
   results={{"1. without eval":{"runTime":-1005,"amountOfRounds":233,"percent":53.2},"2. with eval":{"runTime":-1001,"amountOfRounds":438,"percent":100}}}
   client:load
 />
@@ -775,7 +775,7 @@ const result =
 </div>
 
 <Benchmark
-  id="benchmark-strings"
+  selector="#benchmark-strings"
   iterations={5000}
   results={{"1. mutation":{"runTime":-1000,"amountOfRounds":1808,"percent":37.43},"2. concatenation":{"runTime":-1000,"amountOfRounds":4830,"percent":100}}}
   client:load
@@ -884,7 +884,7 @@ for (let i = 0; i < 100; i++) {
 </div>
 
 <Benchmark
-  id="benchmark-specialization"
+  selector="#benchmark-specialization"
   iterations={5000}
   results={{"1. not specialized":{"runTime":-1118,"amountOfRounds":6,"percent":85.71},"2. specialized":{"runTime":-1062,"amountOfRounds":7,"percent":100}}}
   client:load
@@ -932,7 +932,7 @@ for (let i = 0; i < userIds.length; i++) {
 </div>
 
 <Benchmark
-  id="benchmark-data-structures"
+  selector="#benchmark-data-structures"
   results={{"1. Array":{"runTime":-1000,"amountOfRounds":89836,"percent":34.27},"2. Set":{"runTime":-1000,"amountOfRounds":262116,"percent":100}}}
   client:load
 />

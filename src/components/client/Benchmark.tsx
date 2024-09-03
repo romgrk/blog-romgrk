@@ -1,3 +1,4 @@
+import * as React from 'react'
 import cx from 'clsx'
 import { useState, useRef } from 'react'
 
@@ -24,8 +25,8 @@ const EMPTY_RESULT = {
 type Result = typeof EMPTY_RESULT
 type Results = Record<string, Result>
 
-export function Benchmark({ id, iterations = 1, results }: {
-  id: string,
+export default function Benchmark({ selector, iterations = 1, results }: {
+  selector: string,
   iterations?: number,
   results?: Results
 }) {
@@ -38,7 +39,7 @@ export function Benchmark({ id, iterations = 1, results }: {
     if (typeof document === 'undefined') return []
     let result = [] as Block[]
     setup.current = ''
-    Array.from(document.querySelectorAll(`#${id} pre > code`)).forEach((block, index) => {
+    Array.from(document.querySelectorAll(`${selector} pre > code`)).forEach((block, index) => {
       const code = block.textContent!.trim()
       const id = code.startsWith('//') ? code.slice(2).split('\n')[0].trim() : `Case ${index + 1}`
       if (id.startsWith('test case')) {
@@ -143,15 +144,17 @@ export function Benchmark({ id, iterations = 1, results }: {
     <div className='flex md:flex-row flex-col gap-4 mb-2'>
       <div className={cx('flex-1 mb-1 grid grid-cols-[max-content_auto]', isRunning && 'opacity-50')}>
         {blocks.map((b) =>
-          <>
-            <div className='w-max-content pr-4'><b>{b.id}:</b></div>
+          <React.Fragment key={b.id}>
+            <div className='w-max-content pr-4'>
+              <b className='text-sm'>{b.id}:</b>
+            </div>
             <div className='grid place-items-center'>
               <div className='relative rounded-lg bg-blue-300/10 overflow-hidden text-center font-bold h-6 p-0 text-sm w-full'>
                 <div className='bg-blue-500/80 absolute top-0 left-0 h-full transition-all' style={{ width: `${shown ? b.result.percent : 0}%` }} />
                 <span className='absolute top-0.5 m-auto left-0 right-0'>{shown ? b.result.percent : 0}%</span>
               </div>
             </div>
-          </>
+          </React.Fragment>
         )}
       </div>
       <div>

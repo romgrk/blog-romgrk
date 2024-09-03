@@ -12,6 +12,7 @@ const { type = 'info', title, small, className } = Astro.props;
   margin-bottom: 2rem;
 }
 .aside h6 {
+  font-size: 0.8em;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -20,7 +21,7 @@ const { type = 'info', title, small, className } = Astro.props;
   @apply text-neutral-400;
 }
 .aside svg {
-  @apply mr-4;
+  @apply mr-2;
 }
 .aside p,
 .aside pre {
@@ -32,9 +33,13 @@ const { type = 'info', title, small, className } = Astro.props;
 }
 .aside-small {
   @apply text-sm;
+  line-height: 1.4;
 }
 .aside-small svg {
   @apply mr-2;
+}
+.aside-small h6 {
+  font-size: 1em;
 }
 </style>
 

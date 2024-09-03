@@ -7,30 +7,25 @@
 :root {
   --color-body-fg:  #dce4f1;
   --color-body-bg:  #262626;
-
+  --color-border: #2d2d2d;
+  --color-border-strong: #323232;
   --color-panel-bg: #212121;
-
   --color-embed-fg: #edf2fb;
   --color-embed-bg: #383838;
   --color-embed-border: #454545;
-
   --color-muted-fg:    #8d9298;
   --color-muted-2x-fg: #6A6E73;
-
   --color-info-fg:  #599eff;
   --color-warning-fg:  #e6ad19;
-
   --color-footer-bg: #101010;
   --color-footer-fg: var(--color-body-fg);
-
   --color-link-fg: #599eff;
   --color-selection-bg: rgba(89, 158, 255, 0.2);
-
   --color-button-bg: #626262;
 
-  --color-border: #2d2d2d;
-
   --transition: 0.2s ease;
+
+  --font-monospace: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   color-scheme: dark;
 }
@@ -219,7 +214,6 @@ button {
   padding: 0.25rem 0.5rem;
   cursor: pointer;
   font-size: 1rem;
-  border: none;
   border-radius: 5px;
   background-color: var(--color-button-bg);
   @apply transition-all;
@@ -234,6 +228,22 @@ button:active:not([disabled]) {
 button[disabled] {
   color: #ccc;
   background-color: rgba(255, 255, 255, 0.10);
+}
+
+button.btn--outlined {
+  border: 2px solid var(--color-button-bg);
+  background-color: transparent;
+}
+button.btn--outlined:focus:not([disabled]),
+button.btn--outlined:hover:not([disabled]) {
+  background-color: transparent;
+}
+button.btn--outlined:active:not([disabled]) {
+  background-color: transparent;
+}
+button.btn--outlined[disabled] {
+  opacity: 0.8;
+  background-color: transparent;
 }
 
 button.sm {
@@ -338,7 +348,9 @@ button.sm {
 .markdown-content p {
   margin-bottom: 2rem;
 }
+.markdown-content abbr,
 .markdown-content mark {
+  text-decoration: none;
   color: unset;
   background-color: transparent;
   border-bottom: 1px dashed var(--color-muted-fg);
@@ -373,6 +385,27 @@ button.sm {
   @apply border-neutral-500/50;
 }
 
+.markdown-content table {
+  margin-bottom: 2rem;
+}
+.markdown-content table th,
+.markdown-content table td {
+  font-size: 0.8em;
+  padding: 6px 13px;
+  border: 1px solid var(--color-border-strong);
+}
+
+.markdown-content img {
+  border: 1px solid var(--color-border);
+}
+.markdown-content img + em {
+  display: block;
+  text-align: center;
+  font-style: normal;
+  font-size: 0.8em;
+  color: var(--color-muted-fg);
+}
+
 code {
   padding: 0.10rem 0.35rem;
   color: var(--color-embed-fg);
@@ -392,6 +425,7 @@ figure > pre {
 
   border-radius: 5px;
   border: 1px solid var(--color-border);
+  color: var(--color-embed-fg) !important;
   background-color: var(--color-panel-bg) !important;
 
   overflow-x: auto;
