@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import './BytePattern.css'
 
 
 const initial   = [0, 0, 0, 0, 0, 0, 0, 0]
@@ -15,7 +16,7 @@ export default function BytePattern(props: { initialValue?: string }) {
   }, 0)
 
   return (
-    <table className='font-mono tabular-nums'>
+    <table className='BytePattern font-mono tabular-nums'>
       <tbody>
         <tr>
           <th>
@@ -25,7 +26,7 @@ export default function BytePattern(props: { initialValue?: string }) {
             <td key={index} className='text-center'>
               <button
                 key={index}
-                className={'w-full ' + (values[index] ? '' : 'btn--outlined')}
+                className={'md:w-full ' + (values[index] ? '' : 'btn--outlined')}
                 onClick={() => {
                   const newValues = [...values]
                   newValues[index] = values[index] ? 0 : 1
@@ -43,13 +44,23 @@ export default function BytePattern(props: { initialValue?: string }) {
           </th>
           {positions.map(index =>
             <td key={index} className='text-center'>
-              {values[index] ?
-                <>
-                  {index === 7 ? '-' : <span>&nbsp;</span>}
-                  <span>2^{index}&nbsp;</span>
-                </> :
-                <span>&nbsp;&nbsp;0&nbsp;&nbsp;</span>
-              }
+              <span className='md:hidden'>
+                {values[index] ?
+                  <>
+                    {index === 7 ? '-' : ''}<span>2^{index}</span>
+                  </> :
+                  <span>0</span>
+                }
+              </span>
+              <span className='hidden md:inline'>
+                {values[index] ?
+                  <>
+                    {index === 7 ? '-' : <span>&nbsp;</span>}
+                    <span>2^{index}&nbsp;</span>
+                  </> :
+                  <span>&nbsp;&nbsp;0&nbsp;&nbsp;</span>
+                }
+              </span>
               
             </td>
           )}
