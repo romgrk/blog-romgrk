@@ -10,10 +10,20 @@ import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
 import Benchmark from '../../components/client/Benchmark.tsx'
 import BytePattern from '../../components/client/BytePattern.tsx'
 import CodeRunner from '../../components/client/CodeRunner.tsx'
+import gpu from './webgl-quickstart/gpu.ts'
 
 
-The other day I wanted to run code on the GPU quickly to validate if it could be used to speed up a problem I had. It was annoying to realize that there was no copy-pastable snippet of code that I could re-use to an equivalent to `data.map(gpuCode)` in javascript. I was hoping to be able to write such snippet and share it so the next person to have the same problem could have a copy-pastable snippet to validate their use-case, but as I went on to write that code I realized why there was none: GPUs are tailor-made for rendering pipelines, and mapping javascript code to GPU code requires you to twist the way you solve your problem to fit into that model.
+The other day I wanted to run code on the GPU quickly to validate if it could be used to speed up a problem I had, which was essentially running a `Array#map()` operation on a `Uint32Array`. It was annoying to realize that there was no copy-pastable snippet of code that I could use as a base and modify. I was hoping to be able to write such snippet and share it so the next person to have the same problem could have a copy-pastable snippet to validate their use-case, but as I went on to write that code I realized why there was none: GPUs are tailor-made for rendering pipelines, and mapping javascript code to GPU code requires you to twist the way you solve your problem to fit into that model.
 
+So to transform this javascript code:
+
+```javascript
+const data = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+const output = data.map(n => n * 2)
+```
+
+In an equivalent WebGL implementation, it took me about [200 lines of code](https://github.com/romgrk/blog-romgrk/blob/master/src/content/posts/webgl-quickstart/gpu.ts). Correction: 200 lines of *ugly* code.
 
 
 

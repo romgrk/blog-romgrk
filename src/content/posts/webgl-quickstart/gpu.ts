@@ -3,12 +3,17 @@
  * and outputs an array of the same dimension, after running a shader on it.
  *
  * @usage
- *   const gpu = setup()
- *   gpu.setDimensions(100, 100)
- *   gpu.setData()
+ *   const gpu = setup(`
+ *     uint transform(uint data) {
+ *       return data * 2u;
+ *     }
+ *   `)
+ *   gpu.setDimensions(2, 2)
+ *   gpu.setData(new Uint32Array([0, 1, 2, 3]))
  *   output = gpu.compute()
+ *
  */
-export function setup(canvas = document.createElement('canvas')) {
+export function setup(transform: string, canvas = document.createElement('canvas')) {
   const maybeGl = canvas.getContext('webgl2');
   if (!maybeGl)
     throw new Error('webgl2_required');
@@ -41,19 +46,7 @@ export function setup(canvas = document.createElement('canvas')) {
     uniform uvec4 dimensions;
     uniform sampler2D inputData;
 
-    uint PRIME = 16777619u;
-    uint OFFSET = 2166136261u;
-
-    uint fnv1a(uint data) {
-      uint h = OFFSET;
-
-      for (uint i = 0u; i < 4u; i++) {
-        h = h ^ ((data >> (i * 8u)) & 0xffu);
-        h = h * PRIME;
-      }
-
-      return h;
-    }
+    ${transform}
 
     void main() {
       uint width  = (dimensions[1] << 8) | (dimensions[0] << 0);
@@ -76,7 +69,7 @@ export function setup(canvas = document.createElement('canvas')) {
 
       /* Start of transform code */
 
-      value = fnv1a(value);
+      value = transform(value);
 
       /* End of transform code */
 
