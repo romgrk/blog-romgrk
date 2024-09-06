@@ -10,8 +10,7 @@
  *   `)
  *   gpu.setDimensions(2, 2)
  *   gpu.setData(new Uint32Array([0, 1, 2, 3]))
- *   output = gpu.compute()
- *
+ *   const output = gpu.compute()
  */
 export function setup(transform: string, canvas = document.createElement('canvas')) {
   const maybeGl = canvas.getContext('webgl2');
