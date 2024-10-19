@@ -60,11 +60,62 @@ Then the compiler would have enough information to tell you that you can't use `
 
 This is essentially an implementation of the age-old programming saying, **"make illegal state unrepresentable"**.
 
-Proper error handling was pioneered by monadic languages such as Haskell, which has [the `Either` monad](https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Either.html) and its two subtypes, `Left` and `Right`. A more pragmatic approach exists in Rust, which has [the `Result` type](https://doc.rust-lang.org/std/result/) and its two subtypes `Ok` and `Err`. Powerful type-systems that build on decades of language-design improvements are an incredibly useful tool, and we should be using them to ensure that we can't make silly mistakes.
+Proper error handling was pioneered by monadic languages such as Haskell, which has [the `Either` monad](https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Either.html) and its two subtypes, `Left` and `Right`. A more pragmatic approach exists in Rust, which has [the `Result` type](https://doc.rust-lang.org/std/result/) and its two subtypes `Ok` and `Err`. Those are lessons that we should apply to modern programming.
+
+
+## Opaque types
+
+One feature that I really miss in Typescript compared to type-systems not based on structural typings is being able to declare new types that can hold the same value type without being able to mix them up. Here is an easy example:
+
+```typescript
+type Width  = number
+type Height = number
+
+const baseHeight = 50  as Height
+const baseWidth  = 100 as Width
+
+const sectionWidth = 40 as Width
+const diff  = baseWidth - sectionWidth
+//    ^ is of type `Width`
+
+// ...then later in the code
+const newValue = baseHeight - diff
+// Error, we are mixing Height and Width!
+// But TS won't warn you :(
+```
+
+How wonderful would it be if the compiler could prevent us from mixing values that shouldn't be mixed! This is a constraint that we'll often try to encode in the variable name (e.g. all width variables ending with `...Width`), but it's a shame that the type-system can't eliminate this type of error. There's other very useful cases, such as `ZeroIndexed` and `OneIndexed` numbers. It is possible to [create somewhat opaque types](https://calebmer.com/tangents/opaque-types-in-typescript.html) that can't be mixed, but because we can't express which operators are valid for a type, the compiler would consider `Width + Width` as an error if it was defined as such. So most of the time, using opaque types to add constraints is not worth the hassle.
+
+One notable exception could be safe/unsafe strings. For example, if you're building a templating engine and need to pass user-input strings, being able to have a `SafeString` type could allow the compiler to ensure safety:
+
+```typescript
+type SafeString = string & { _opaque: typeof SafeString };
+declare const SafeString: unique symbol;
+
+function escape(value: string): SafeString {
+  /* ... */
+}
+
+function format(template: string, values: Record<string, SafeString>) {
+  /* ... */
+}
+
+// then use it as such
+format(
+  "<html><p>User name: %name%</p></html>",
+  {
+    name: "Unsafe! <script src=\"https://attacker.com/script.js\" />"
+    //    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //    Type 'string' is not assignable to type 'SafeString'.
+  }
+)
+```
 
 ## Conclusion
 
-So please, *please*, add explicit constraints to your APIs. **Well placed constraints are not limitations, they are actually freedom**. Typescript also has much more depth than what I covered here, so if you want to understand how to encode more complex constraints, I highly recommend reading these posts:
+*Please*, add explicit constraints to your APIs. **Well placed constraints are not limitations, they are actually freedom**.
+
+Typescript also has much more depth than what I covered here, so if you want to understand how to encode more complex constraints, I highly recommend reading these posts:
 
 https://zhenghao.io/posts/ts-never  
 https://zhenghao.io/posts/type-programming  
