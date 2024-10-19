@@ -59,8 +59,19 @@ Then the compiler would have enough information to tell you that you can't use `
 
 This is essentially an implementation of the age-old programming saying, **"make illegal state unrepresentable"**.
 
-Proper error handling was pioneered by monadic languages such as Haskell, which has [the `Either` monad](https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Either.html) and its two subtypes, `Left` and `Right`. A more pragmatic approach exists in Rust, which has [the `Result` type](https://doc.rust-lang.org/std/result/) and its two subtypes `Ok` and `Err`. Those are lessons that we should apply to modern programming.
+Proper error handling was pioneered by monadic languages such as Haskell, which has [the `Either` monad](https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Either.html) and its two subtypes, `Left` and `Right`. A more pragmatic approach exists in Rust, which has [the `Result` type](https://doc.rust-lang.org/std/result/) and its two subtypes `Ok` and `Err`. Those are lessons that we should apply to modern programming to get both safe and ergonomic error handling.
 
+One example of ergonomic error handling: `Result` being a Functor means we could `result.map(n => n * 2)` the value inside a `Result` the same way we can operate on values inside an `Array` (`Ok` would apply the mapping function, while mapping an `Err` would be a no-op). Other methods from FP & category theory would also be applicable, e.g. `.flatMap()` or `.fold()`, which in turn allow new ways to express code:
+
+```typescript
+const result = useQuery()
+
+return result.fold(
+  loading => <Spinner />,
+  error => <ErrorMessage error={error} />,
+  data => <p>{data.name}</p>,
+)
+```
 
 ## Opaque types
 
