@@ -1,0 +1,73 @@
+---
+title: 'Efficient Typescript'
+description: ''
+pubDate: 'Oct 20 2024'
+sidebar: { display: false }
+draft: true
+---
+import Aside from '../../components/Aside.astro'
+import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
+import exampleSuccess from './efficient-typescript/typescript-success.png'
+import exampleError from './efficient-typescript/typescript-error.png'
+
+
+One of the most useful ways that a type-system can work is by preventing a class of errors. The simplest way to interpret that is that it will prevent you from using a `number` where you need a `string`, but there's more to it. Typescript allows you to encode more complex restrictions into the type-system, so the compiler can help you avoid making some mistakes.
+
+It's an issue I see frequently in even popular library code, for example let's take this example from `react-query`'s documentation:
+
+```javascript
+const { isPending, error, data } = useQuery({
+  queryKey: ['repoData'],
+  queryFn: async () => fetch(
+    'https://api.github.com/repos/TanStack/query'
+  ),
+});
+
+if (isPending) return 'Loading...'
+
+if (error) return 'Error: ' + error.message
+
+return (
+  <div>
+    <h1>{data.full_name}</h1>
+    <p>{data.description}</p>
+  </div>
+)
+```
+
+There is here an implicit constraint that if `isPending` or `error` is present, then `data` isn't. But ensuring that constraint is a task that's left to you, the fallible programmer. Typescript actually allows you to **turn that implicit constraints into an explicit one**, which means the compiler could be doing work so that you don't have to think about it.
+
+For example, if the typings were defined as such:
+
+```typescript
+type PendingState   = { isPending: true,  error: null,  data: null }
+type ErrorState     = { isPending: false, error: Error, data: null }
+type LoadedState<T> = { isPending: false, error: null,  data: T }
+
+type QueryResult<T> = PendingState | ErrorState | LoadedState<T>
+```
+
+Then the compiler would have enough information to tell you that you can't use `data` if it is `null`:
+
+<div class="row w-full">
+  <img width="50%" src={exampleSuccess.src} />
+  <img width="50%" src={exampleError.src} />
+</div>
+
+<div class="text-center text-sm">
+  [See this example in Typescript playground](https://www.typescriptlang.org/play/?#code/FAFwngDgpgBAClAdgEwJaIOYGUQEMSwwwC8MA3jKgM4IroYBcMIATgK5QA0RULLA9iyaI2AG1HcYyfLmFjRMAL6hIsAKJ9BOfISIlylGkjSYmAM1yiqXGLwFCYG+92l454pSugwAMv1zIUMjaBAA8ACoAfPoU1LQmjDAWVjZ2gu4SRK6yMOGeXrAAihwsYABKUFRiIBHRpPH0IbAAPo6aLE0wrX4BQU21wMBmbIgAxiCo-IgwbNbFvGAAFACU5MBELFAgbCzTsUZ0pszsqe0ZLjIZSjC4VDDzpRVVojUUiLgAtlBMVKz0SpFgMohiNxpNpgBhfgfCBTJAgFZrIijKa-AxxYz0bhpFgXPDXUizKAPJbLADcgyIAHoqZQzDBFhjDhhVpttrsYAByHoJAB0-M5lLpDJxrK2O2mnKc6S5MAA1LZ2ryvlQqLgMFAhWyJQz1npsrz3l89csgUA)
+</div>
+
+This is essentially an implementation of the age-old programming saying, **"make illegal state unrepresentable"**.
+
+Proper error handling was pioneered by monadic languages such as Haskell, which has [the `Either` monad](https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Either.html) and its two subtypes, `Left` and `Right`. A more modern (and pragmatic) approach exists in Rust, which called the type `Result` and its two subtypes `Ok` and `Err`. Powerful type-systems are an incredibly useful tool, and we should be using it to ensure that we can't make silly mistakes like forgetting to check if a value is loading.
+
+## Conclusion
+
+So please, *please*, add explicit constraints to your APIs. **Well placed constraints are not limitations, they are actually freedom**. Typescript also has much more depth than what I covered here, so if you want to understand how to encode more complex constraints, I highly recommend reading these posts:
+
+https://www.zhenghao.io/posts/ts-never  
+https://www.zhenghao.io/posts/type-programming  
+https://www.zhenghao.io/posts/type-functions  
+
+<RandomPlant className='mt-8 mb-16' />
