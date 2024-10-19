@@ -44,6 +44,8 @@ const { type = 'info', title, small, className } = Astro.props;
 </style>
 
 <aside class={`aside aside-${type} ` + (small ? ' aside-small' : '') + (className ? ' ' + className : '')}>
-  <h6><Icon name='octicon:info-16' /><span>{title}</span></h6>
+  {title &&
+    <h6><Icon name='octicon:info-16' /><span>{title}</span></h6>
+  }
   <slot />
 </aside>

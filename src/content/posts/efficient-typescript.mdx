@@ -57,6 +57,11 @@ Then the compiler would have enough information to tell you that you can't use `
   [See this example in Typescript playground](https://www.typescriptlang.org/play/?#code/FAFwngDgpgBAClAdgEwJaIOYGUQEMSwwwC8MA3jKgM4IroYBcMIATgK5QA0RULLA9iyaI2AG1HcYyfLmFjRMAL6hIsAKJ9BOfISIlylGkjSYmAM1yiqXGLwFCYG+92l454pSugwAMv1zIUMjaBAA8ACoAfPoU1LQmjDAWVjZ2gu4SRK6yMOGeXrAAihwsYABKUFRiIBHRpPH0IbAAPo6aLE0wrX4BQU21wMBmbIgAxiCo-IgwbNbFvGAAFACU5MBELFAgbCzTsUZ0pszsqe0ZLjIZSjC4VDDzpRVVojUUiLgAtlBMVKz0SpFgMohiNxpNpgBhfgfCBTJAgFZrIijKa-AxxYz0bhpFgXPDXUizKAPJbLADcgyIAHoqZQzDBFhjDhhVpttrsYAByHoJAB0-M5lLpDJxrK2O2mnKc6S5MAA1LZ2ryvlQqLgMFAhWyJQz1npsrz3l89csgUA)
 </div>
 
+<Aside title="Note">
+  Some commenter pointed out that react-query is a bad example because it can represent more complex situations with its different flags. I'll leave the example as is, because the example is good, even if contrived. The library could also reserve a different function for more complex scenarios, e.g. `useQueryWithRetainedData` to keep `data` alive while re-loading, which would in turn allow for stronger type constraints in the common scenarios.
+</Aside>
+
+
 This is essentially an implementation of the age-old programming saying, **"make illegal state unrepresentable"**.
 
 Proper error handling was pioneered by monadic languages such as Haskell, which has [the `Either` monad](https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Either.html) and its two subtypes, `Left` and `Right`. A more pragmatic approach exists in Rust, which has [the `Result` type](https://doc.rust-lang.org/std/result/) and its two subtypes `Ok` and `Err`. Those are lessons that we should apply to modern programming to get both safe and ergonomic error handling.
