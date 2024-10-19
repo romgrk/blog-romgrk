@@ -60,7 +60,7 @@ Then the compiler would have enough information to tell you that you can't use `
 
 This is essentially an implementation of the age-old programming saying, **"make illegal state unrepresentable"**.
 
-Proper error handling was pioneered by monadic languages such as Haskell, which has [the `Either` monad](https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Either.html) and its two subtypes, `Left` and `Right`. A more pragmatic approach exists in Rust, which has [the `Result` type](https://doc.rust-lang.org/std/result/) and its two subtypes `Ok` and `Err`. Powerful type-systems are an incredibly useful tool, and we should be using it to ensure that we can't make silly mistakes like forgetting to check if a value is loading.
+Proper error handling was pioneered by monadic languages such as Haskell, which has [the `Either` monad](https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Either.html) and its two subtypes, `Left` and `Right`. A more pragmatic approach exists in Rust, which has [the `Result` type](https://doc.rust-lang.org/std/result/) and its two subtypes `Ok` and `Err`. Powerful type-systems that build on decades of language-design improvements are an incredibly useful tool, and we should be using them to ensure that we can't make silly mistakes.
 
 ## Conclusion
 
