@@ -13,7 +13,7 @@ import exampleError from './efficient-typescript/typescript-error.png'
 
 One of the most useful ways that a type-system can work is by preventing a class of errors. The simplest way to interpret that is that it will prevent you from using a `number` where you need a `string`, but there's more to it. Typescript allows you to encode more complex restrictions into the type-system, so the compiler can help you avoid making some mistakes.
 
-It's an issue I see frequently in even popular library code, for example let's take this example from `react-query`'s documentation:
+It's an issue I see frequently, even in popular library code. For example, let's take this snippet from `react-query`'s documentation:
 
 ```javascript
 const { isPending, error, data } = useQuery({
@@ -49,9 +49,9 @@ type QueryResult<T> = PendingState | ErrorState | LoadedState<T>
 
 Then the compiler would have enough information to tell you that you can't use `data` if it is `null`:
 
-<div class="row w-full">
-  <img width="50%" src={exampleSuccess.src} />
-  <img width="50%" src={exampleError.src} />
+<div class="flex flex-col md:flex-row w-full">
+  <img class="w-full md:w-1/2" src={exampleSuccess.src} />
+  <img class="w-full md:w-1/2" src={exampleError.src} />
 </div>
 
 <div class="text-center text-sm">
@@ -60,14 +60,14 @@ Then the compiler would have enough information to tell you that you can't use `
 
 This is essentially an implementation of the age-old programming saying, **"make illegal state unrepresentable"**.
 
-Proper error handling was pioneered by monadic languages such as Haskell, which has [the `Either` monad](https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Either.html) and its two subtypes, `Left` and `Right`. A more modern (and pragmatic) approach exists in Rust, which called the type `Result` and its two subtypes `Ok` and `Err`. Powerful type-systems are an incredibly useful tool, and we should be using it to ensure that we can't make silly mistakes like forgetting to check if a value is loading.
+Proper error handling was pioneered by monadic languages such as Haskell, which has [the `Either` monad](https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Either.html) and its two subtypes, `Left` and `Right`. A more pragmatic approach exists in Rust, which has [the `Result` type](https://doc.rust-lang.org/std/result/) and its two subtypes `Ok` and `Err`. Powerful type-systems are an incredibly useful tool, and we should be using it to ensure that we can't make silly mistakes like forgetting to check if a value is loading.
 
 ## Conclusion
 
 So please, *please*, add explicit constraints to your APIs. **Well placed constraints are not limitations, they are actually freedom**. Typescript also has much more depth than what I covered here, so if you want to understand how to encode more complex constraints, I highly recommend reading these posts:
 
-https://www.zhenghao.io/posts/ts-never  
-https://www.zhenghao.io/posts/type-programming  
-https://www.zhenghao.io/posts/type-functions  
+https://zhenghao.io/posts/ts-never  
+https://zhenghao.io/posts/type-programming  
+https://zhenghao.io/posts/type-functions  
 
 <RandomPlant className='mt-8 mb-16' />
