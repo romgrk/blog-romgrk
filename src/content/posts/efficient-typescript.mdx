@@ -66,7 +66,17 @@ This is essentially an implementation of the age-old programming saying, **"make
 
 Proper error handling was pioneered by monadic languages such as Haskell, which has [the `Either` monad](https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Either.html) and its two subtypes, `Left` and `Right`. A more pragmatic approach exists in Rust, which has [the `Result` type](https://doc.rust-lang.org/std/result/) and its two subtypes `Ok` and `Err`. Those are lessons that we should apply to modern programming to get both safe and ergonomic error handling.
 
-One example of ergonomic error handling: `Result` being a Functor means we could implement it as a class with a `.map` method, so we could `result.map(n => n * 2)` the value inside a `Result` the same way we can operate on values inside an `Array` (`Ok` would apply the mapping function, while mapping an `Err` would be a no-op). Other methods from FP & category theory would also be applicable, e.g. `.flatMap()` or `.fold()`, which in turn allow new expressive ways to write code:
+One example of ergonomic error handling: `Result` being a Functor means we can implement it as a class with a `.map` method, so we could transform the value inside a `Result` the same way we can operate on values inside an `Array` (`Ok` would apply the mapping function, while mapping an `Err` would be a no-op).
+
+```typescript
+function findUser(): Result<User>;
+
+const name = findUser().map(user => user.name) // Result<string>
+```
+
+This allows you to delay error handling for later, while still allowing you to transform the value. It's very similar to how `Promise` let's you chain `.then` calls even if you haven't attached a `.catch` handler yet. In fact, the cases are related because `Promise` is basically a monad, bar a few minor details.
+
+Other methods from category theory would also be applicable, such as `.flatMap()` or `.fold()`, which in turn allow new expressive ways to write code:
 
 ```typescript
 const result = useQuery()
