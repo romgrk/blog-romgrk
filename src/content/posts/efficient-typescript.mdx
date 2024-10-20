@@ -59,7 +59,7 @@ Then the compiler would have enough information to tell you that you can't use `
 
 This is essentially an implementation of the age-old programming saying, **"make illegal state unrepresentable"**.
 
-<Aside title="Note">
+<Aside title="Correction">
   Some commenter pointed out that react-query is a bad example because it can represent more complex situations with its different flags. I'll leave the example as is, because the example is good, even if contrived.  
   The library could also reserve a different function for more complex scenarios, e.g. `useQueryWithRetainedData` to keep `data` alive while re-loading, or split that behavior into a separate `useRetainedData` hook, which would in turn allow for stronger type constraints and better error handling.
 </Aside>
