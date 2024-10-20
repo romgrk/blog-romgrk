@@ -77,6 +77,8 @@ return result.fold(
 )
 ```
 
+The greatest benefit of this kind of error-handling is that it encodes failure directly in the type-system, so you know at compile-time if you haven't dealt with a failure.
+
 ## Opaque types
 
 One feature that I really miss in Typescript compared to type-systems not based on structural typings is being able to declare new types that can hold the same value type without being able to mix them up. Here is an easy example:
