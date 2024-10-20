@@ -60,13 +60,13 @@ Then the compiler would have enough information to tell you that you can't use `
 This is essentially an implementation of the age-old programming saying, **"make illegal state unrepresentable"**.
 
 <Aside title="Correction">
-  Some commenter pointed out that react-query is a bad example because it can represent more complex situations with its different flags. I'll leave the example as is, because the example is good, even if contrived.  
-  The library could also reserve a different function for more complex scenarios, e.g. `useQueryWithRetainedData` to keep `data` alive while re-loading, or split that behavior into a separate `useRetainedData` hook, which would in turn allow for stronger type constraints and better error handling.
+  Some commenter pointed out that react-query is a bad example because it can handle more complex situations with its different flags (notably keep `.data` alive while re-fetching). I'll leave the example as is, because the example is good, even if contrived.  
+  The library could also split that behavior into a separate `useRetainedData` hook, which would allow for the base `useQuery` hook to have strong type constraints.
 </Aside>
 
 Proper error handling was pioneered by monadic languages such as Haskell, which has [the `Either` monad](https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Either.html) and its two subtypes, `Left` and `Right`. A more pragmatic approach exists in Rust, which has [the `Result` type](https://doc.rust-lang.org/std/result/) and its two subtypes `Ok` and `Err`. Those are lessons that we should apply to modern programming to get both safe and ergonomic error handling.
 
-One example of ergonomic error handling: `Result` being a Functor means we could implement it as a class with a `.map` method, so we could `result.map(n => n * 2)` the value inside a `Result` the same way we can operate on values inside an `Array` (`Ok` would apply the mapping function, while mapping an `Err` would be a no-op). Other methods from FP & category theory would also be applicable, e.g. `.flatMap()` or `.fold()`, which in turn allow new ways to express code:
+One example of ergonomic error handling: `Result` being a Functor means we could implement it as a class with a `.map` method, so we could `result.map(n => n * 2)` the value inside a `Result` the same way we can operate on values inside an `Array` (`Ok` would apply the mapping function, while mapping an `Err` would be a no-op). Other methods from FP & category theory would also be applicable, e.g. `.flatMap()` or `.fold()`, which in turn allow new expressive ways to write code:
 
 ```typescript
 const result = useQuery()
@@ -78,7 +78,7 @@ return result.fold(
 )
 ```
 
-The greatest benefit of this kind of error-handling is that it **encodes failure directly in the type-system**, so you know at compile-time if you haven't dealt with a failure, rather than have to wait to `catch` errors at runtime.
+But the greatest benefit of this kind of error-handling is that it **encodes failure directly in the type-system**, so you know at compile-time if you haven't dealt with a failure, rather than have to wait to `catch` errors at runtime.
 
 ## Opaque types
 
