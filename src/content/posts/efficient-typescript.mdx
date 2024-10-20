@@ -100,13 +100,13 @@ const newValue = baseHeight - diff
 // But TS won't warn you :(
 ```
 
-How wonderful would it be if the compiler could prevent us from mixing values that shouldn't be mixed! This is a constraint that we'll often try to encode in the variable name (e.g. all width variables ending with `...Width`), but it's a shame that the type-system can't eliminate this type of error. There's other very useful cases, such as `ZeroIndexed` and `OneIndexed` numbers. It is possible to [create somewhat opaque types](https://calebmer.com/tangents/opaque-types-in-typescript.html) that can't be mixed, but because we can't express which operators are valid for a type, the compiler would consider `Width + Width` as an error if it was defined as such. So most of the time, using opaque types to add constraints is not worth the hassle.
+How wonderful would it be if the compiler could prevent us from mixing values that shouldn't be mixed! This is a constraint that we'll often try to encode in the variable name (e.g. all width variables ending with `...Width`), but it's a shame that the type-system can't eliminate this type of error. It is possible to [create somewhat opaque types](https://calebmer.com/tangents/opaque-types-in-typescript.html) that can't be mixed, but because we can't express which operators are valid for a type, the compiler would consider `Width + Width` as an error if it was defined as such. So most of the time, using opaque types to add constraints is not worth the hassle.
 
 One notable exception could be safe/unsafe strings. For example, if you're building a templating engine and need to pass user-input strings, being able to have a `SafeString` type could allow the compiler to ensure safety:
 
 ```typescript
-type SafeString = string & { _opaque: typeof SafeString };
-declare const SafeString: unique symbol;
+declare const __safe: unique symbol;
+type SafeString = string & { [__safe]: true };
 
 function escape(value: string): SafeString {
   /* ... */
