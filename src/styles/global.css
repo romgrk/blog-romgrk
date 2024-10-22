@@ -127,7 +127,7 @@ footer {
 
 
 header, main, footer {
-  --content-width: 800px;
+  --content-width: 720px;
   --padding-width: calc(max(1rem, (100vw - var(--content-width)) / 2));
 
   padding-left:  var(--padding-width);
@@ -384,6 +384,12 @@ button.sm {
   @apply border-l-2;
   @apply border-neutral-500/50;
 }
+@media (max-width: 720px) {
+  .markdown-content blockquote {
+    @apply px-4;
+    @apply text-sm;
+  }
+}
 
 .markdown-content table {
   margin-bottom: 2rem;
@@ -443,6 +449,13 @@ figure > pre > code {
   background-color: #c8c8ff1a;
 }
 
+@media (max-width: 720px) {
+  figure > pre > code {
+    font-size: 0.8em;
+  }
+}
+
+
 
 .code-blocks pre {
   margin-bottom: 0;
@@ -451,7 +464,7 @@ figure > pre > code {
   padding-bottom: 1rem;
 }
 
-@media (min-width: 800px) {
+@media (min-width: 720px) {
   .code-blocks-row {
     display: flex;
     flex-direction: row;
@@ -465,7 +478,7 @@ figure > pre > code {
     margin-right: var(--gap, 0);
   }
 }
-@media (max-width: 800px) {
+@media (max-width: 720px) {
   .code-blocks-row {
     display: flex;
     flex-direction: column;
