@@ -223,33 +223,33 @@ Although the names sound more natural when pronounced out loud for the first blo
 
 #### Aligning for logic
 
-Another way in which alignment can be helpful is when we need have operations on mostly similar expression, with slightly differing semantics. The example below is from a python codebase I worked on (translated in javascript). In this particular case I had to fight the auto-formatter (and colleagues) to have it formatted properly.
+Another way in which alignment can be helpful is when we need have operations on mostly similar expression, with slightly differing semantics. The example below is from a python codebase I worked on, where we split a dataframe into two sub-sections. In this particular case I had to fight the auto-formatter (and colleagues) to have it formatted properly.
 
 <div class='code-blocks'>
 
 ```javascript
 // code as the auto-formatter wanted it
-const average = (stats, df) => [df > stats.average, df <= stats.average]
-const q1 = (stats, df) => [df > stats.q1, df <= stats.q1]
-const outliers = (stats, df) => [df > stats.outliers, df <= stats.outliers]
-const even = (stats, df) => [df % 2 == 0, df % 2 == 1]
+average = [df > stats.average, df <= stats.average]
+q1 = [df > stats.q1, df <= stats.q1]
+outliers = [df > stats.outliers, df <= stats.outliers]
+even = [df % 2 == 0, df % 2 == 1]
 ```
 
 ```javascript
 // code as I wanted it
-const average = (stats, df) => [
+average = [
   df >  stats.average,
   df <= stats.average,
 ]
-const q1 = (stats, df) => [
+q1 = [
   df >  stats.q1,
   df <= stats.q1,
 ]
-const outlier = (stats, df) => [
+outlier = [
   df >  stats.outlier,
   df <= stats.outlier,
 ]
-const even = (stats, df) => [
+even = [
   df % 2 == 0,
   df % 2 == 1,
 ]
@@ -257,13 +257,36 @@ const even = (stats, df) => [
 
 </div>
 
-Which of those block would you prefer to code review? The auto-formatted one, or the manually formatted one? For all their benefits, full-code formatters like `prettier` have gotten many programmers convinced that even talking about formatting and alignment is a negative, best left to machines to deal with. Code is not just about machines. It's about humans.
+Which of those block would you prefer to code review? The auto-formatted one, or the manually formatted one? For all their benefits, **full-code formatters like `prettier` have gotten many programmers convinced that even talking about formatting and alignment is a negative**, best left to machines to deal with. Code is not just about machines. It's about humans.
 
-I don't want to have to argue if the `{` should be after the `if` or on a line of its own. `eslint` can do that well enough, no need to let `prettier` destroy beauty.
+I don't want to have to argue if the `{` should be after the `if` or on a line of its own. `eslint` can do that well enough, no need to let `prettier` destroy beauty. Here is an example from some color code, in typescript:
+
+<div class='code-blocks'>
+
+```typescript
+// code as prettier wants it
+export function newColor(r: number, g: number, b: number, a: number) {
+  return (r << OFFSET_R) + (g << OFFSET_G) + (b << OFFSET_B) + (a << OFFSET_A);
+}
+```
+
+```typescript
+// code as it should be
+export function newColor(r: number, g: number, b: number, a: number) {
+  return (
+    (r << OFFSET_R) +
+    (g << OFFSET_G) +
+    (b << OFFSET_B) +
+    (a << OFFSET_A)
+  );
+}
+```
+
+</div>
 
 #### Spacing for clarity
 
-And if the last example I went for using more vertical space, the opposite can also improve readability.
+And if the last examples I went for using more vertical space, the opposite can also improve readability.
 
 <div class='code-blocks'>
 
