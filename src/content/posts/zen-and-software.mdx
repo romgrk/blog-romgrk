@@ -8,11 +8,11 @@ draft: true
 import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx'
 import Aside from '../../components/Aside.astro'
 
-I've found over the years that there are two sides to programming. The first side is computer science, and it's about data structures, algorithms and CPUs. The second side, I call software engineering. This side is about creating readable and maintainable codebases that can evolve over time, and just like Quality in *Zen and the art of motorcycle maintenance*, is hard to quantify, but easy to qualify: you know it when you see it. This post is a counterpart to [optimizing javascript for fun and for profit](./optimizing-javascript), where instead of focusing on the performance part of code, I explain the various practices that have helped me create readable and maintainable code.
+I've found over the years that there are two sides to programming. The first side is computer science, and it's about data structures, algorithms and CPUs. The second side, I call software engineering. This side is about creating readable and maintainable codebases that can evolve over time, and just like Quality in *Zen and the art of motorcycle maintenance*, is hard to quantify, but easy to qualify: you know it when you see it. This post is a counterpart to [Optimizing JS for fun and for profit](./optimizing-javascript), where instead of focusing on the performance part of code, I explain the various practices that have helped me create readable and maintainable code.
 
 ### 1. Constraints
 
-My last post on [efficient typescript](./efficient-typescript) touched a bit on the subject, but I cannot emphasize enough how much establishing constraints is an essential part of maintainable code. Constraints give you the possibility of making assumptions later on that will simplify the rest of your codebase.
+My last post on [Efficient Typescript](./efficient-typescript) touched a bit on the subject, but I cannot emphasize enough how much establishing constraints is an essential part of maintainable code. Constraints give you the possibility of making assumptions later on that will simplify your codebase.
 
 A common way to spot if you are not strict enough is that you often end up adding a lot of defensive checks, for example:
 
@@ -61,9 +61,9 @@ I see too often people defaulting to `null`/`undefined` as a way to signal that 
 ```typescript
 type Dimension = { width: number, height: number }
 
-// This is our component's dimensions.
-// It's calculated on the first render, so we don't have a value for it yet.
-// Let it be null for now.
+// This is our component's dimensions. It's
+// calculated on the first render, so we don't have
+// a value for it yet. Let it be null for now.
 let rootDimensions = null as Dimension | null
 ```
 
@@ -119,7 +119,39 @@ My all-time favourite programming quote summarizes well how important naming is:
 >
 > ― A reddit user
 
-So which names could you refactor? How can you improve the semantics of your program?
+So which names can you refactor?
+
+#### Declarative programming
+
+Writing code in a declarative way is also very helpful for readability, and functional programming in particular is very suitable for this. Take for example these two versions:
+
+<div class='code-blocks'>
+
+```javascript
+let result = 0
+for (let i = 0; i < numbers.length; i++) {
+  let n = Math.round(numbers[i] * 10)
+  if (n % 2 !== 0) continue
+  result = result + n
+}
+```
+
+```javascript
+const result =
+  numbers
+    .map(n => Math.round(n * 10))
+    .filter(n => n % 2 === 0)
+    .reduce((a, n) => a + n, 0)
+```
+
+</div>
+
+The second one tells you right away the operations that it's going to do: a transform (`map`), a filtering pass, and then a reduction to a final value. To get all that information, you only have to pick up the `map`, `filter`, and `reduce` symbols. Whereas for the first version, you need to read the full code to pick up that information.
+
+Using FP and in general any shared programming vocabulary (e.g. design patterns) is a good way to communicate what the code is doing in a short and elegant way. By default, write code with the conventions that are already in use by other programmers.
+
+And yes, that example is the inverse of [Optimizing JS: Avoid array/object methods](./optimizing-javascript#3-avoid-arrayobject-methods). One version isn't better than the other. Often, programming is about picking which of performance or maintainability is more important.
+
 
 <RandomPlant className='mt-8 mb-16' />
 
@@ -146,19 +178,23 @@ I always sort code lines this way, and I call these pyramids. Tell me, which one
 <div class='code-blocks'>
 
 ```javascript
-const hasUninitialized = items.some(i => i.status === Status.Uninitialized)
-const hasReady = items.some(i => i.status === Status.Ready)
-const hasInactive = items.some(i => i.status === Status.Inactive)
-const hasPending = items.some(i => i.status === Status.Pending)
-const hasCompleted = items.some(i => i.status === Status.Completed)
+{
+  hasUninitialized: items.some(i => i.status === Status.Uninitialized),
+  hasReady: items.some(i => i.status === Status.Ready),
+  hasInactive: items.some(i => i.status === Status.Inactive),
+  hasPending: items.some(i => i.status === Status.Pending),
+  hasCompleted: items.some(i => i.status === Status.Completed),
+}
 ```
 
 ```javascript
-const hasReady = items.some(i => i.status === Status.Ready)
-const hasPending = items.some(i => i.status === Status.Pending)
-const hasInactive = items.some(i => i.status === Status.Inactive)
-const hasCompleted = items.some(i => i.status === Status.Completed)
-const hasUninitialized = items.some(i => i.status === Status.Uninitialized)
+{
+  hasReady: items.some(i => i.status === Status.Ready),
+  hasPending: items.some(i => i.status === Status.Pending),
+  hasInactive: items.some(i => i.status === Status.Inactive),
+  hasCompleted: items.some(i => i.status === Status.Completed),
+  hasUninitialized: items.some(i => i.status === Status.Uninitialized),
+}
 ```
 
 </div>
@@ -184,31 +220,6 @@ const ROW_GROUPING_STRATEGY_DATA_SOURCE = 'data-source'
 </div>
 
 Although the names sound more natural when pronounced out loud for the first block, they're much easier to read as a whole in the second one.
-
-Another alignment example:
-
-<div class='code-blocks'>
-
-```javascript
-{
-  [`& input[type="search"]::-webkit-search-decoration,
-  & input[type="search"]::-webkit-search-results-decoration`]: {
-    display: 'none',
-  },
-}
-```
-
-```javascript
-{
-  [`& input[type="search"]::-webkit-search-decoration,
-    & input[type="search"]::-webkit-search-results-decoration`]: {
-    display: 'none',
-  },
-}
-```
-
-</div>
-
 
 #### Aligning for logic
 
@@ -293,11 +304,11 @@ switch (priority) {
 
 ### 4. Simplicity
 
-I think if I had to summarize software engineering in one expression, it would be **managing complexity**. Most of our work as software engineers is keeping complexity in check with all the tools we have. One of the characteristics that code should have above all is *simplicity*, and that quality should be the first to aim for. Simple code is easy to read, easy to modify and easy to debug. Code that isn't simple is much harder to also make *correct* and *performant*, thus we should always aim for simplicity first.
+I think if I had to summarize software engineering in one expression, it would be **managing complexity**. Most of our work as software engineers is keeping complexity in check with all the tools we have. One of the characteristics that code should have above all is *simplicity*. Simple code is easy to read, easy to modify and easy to debug. Code that isn't simple is much harder to also make *correct* and *performant*, thus we should always aim for simplicity first.
 
 In fact, if features are an asset, code is a liability. A general rule, and I think everyone will agree with me, is that the more code you have, the more bugs you have. So a software product in theory should aim to have as many features as possible, while having as little code as possible. That's why one of my favourite activities as a programmer is deleting large sections of code.
 
-In practice, in the front-end world this manifest itself as implementing features using browser APIs and CSS instead of re-building existing features in javascript (please no more stupidity like CSS-in-JS ever again).
+In practice, in the front-end world this manifest itself as implementing features using browser APIs and CSS instead of re-building existing features in javascript (please no more horror like CSS-in-JS ever again).
 
 <RandomPlant className='mt-8 mb-16' />
 
