@@ -34,7 +34,7 @@ function findUser(id: number) {
 }
 ```
 
-Now yes, typescript can only help you so much, and you'll sometimes need to add runtime validation checks. That's ok. But there's only ever two places where there should be runtime validation checks: user input and network data. Eveything else is part of a machine that is fully in your control. The machine can accept fuzzy invalid user-input (and fail appropriately), but it should not contain any fuzziness in its insides. No loose screw, no duct tape. Validate your inputs, and then establish ruthlessly strict constraints for how the inside of the machine works.
+Now yes, typescript can only help you so much, and you'll sometimes need to add runtime validation checks. That's ok. But **there's only ever two places where there should be runtime validation: user input and network data**. Eveything else is part of a machine that is fully in your control. The machine can accept fuzzy invalid user-input (and fail appropriately), but it should not contain any fuzziness in its insides. No loose screw, no duct tape. Validate your inputs, and then establish ruthlessly strict constraints for how the inside of the machine works.
 
 <Aside title="Low-level aside">
   Even stronger constraints can also enable even greater power. As an anecdote, the other day I was writing a PR for a Rust codebase I wasn't familiar with that had multi-threaded code. As I was coding, I felt like it would have been possible to switch from a (multi-thread safe but expensive) `Arc<Mutex<T>>` to a (single-threaded only) `Rc<RefCell<T>>`. It sounds like magic but all I had to do to validate that it was safe, was to do the change and let the compiler compile. It compiled, thus it was safe. Doing the same change in C/C++ would have required hours of careful reading of the full system before being satisfied that the change was safe. The constraints placed by the Rust language enabled me to write correct code easily.
@@ -67,7 +67,7 @@ type Dimension = { width: number, height: number }
 let rootDimensions = null as Dimension | null
 ```
 
-It might not be immediately apparent, but the consequence of picking `null` as the empty value condemns every single subsequent section of code that uses `rootDimensions` to add null checks and default values:
+It might not be immediately apparent, but the consequence of picking `null` as the empty value is that it condemns every single subsequent section of code that uses `rootDimensions` to add null checks and default values:
 
 ```typescript
 let sidebarWidth = (rootDimensions?.width ?? 0) * 0.20
@@ -75,7 +75,7 @@ let sidebarWidth = (rootDimensions?.width ?? 0) * 0.20
 // This is going to be repeated *each* time `rootDimensions` is used.
 ```
 
-Whereas maybe initializing the dimensions with a monomorphic value negates the need for any later defensive check:
+Whereas initializing the dimensions with a monomorphic value negates the need for later null checks:
 
 ```typescript
 const EMPTY_DIMENSIONS = { width: 0, height: 0 } as Dimension 
@@ -84,12 +84,14 @@ let rootDimensions = EMPTY_DIMENSIONS // no more `| null` needed!
 ```
 
 <Aside title="A note on performance">
-  For those who spotted that "monomorphic" also ties into my post on performance, yes, having a monormphic value not only helps readability but also greatly improves performance: [Optimizing JS: Avoid different shapes](./optimizing-javascript#2-avoid-different-shapes).
+  For those who spotted that "monomorphic" also ties into my post on performance, yes, having a monomorphic value not only helps readability but also greatly improves performance: [Optimizing JS: Avoid different shapes](./optimizing-javascript#2-avoid-different-shapes).
 </Aside>
 
 #### 1.2 Conclusion
 
 So the question I always ask myself is, **which constraints can I place on my system to ensure the least effort needed down the line?** Which nullable values can you get rid of? Which APIs can you simplify?
+
+<RandomPlant className='mt-8 mb-16' />
 
 
 ### 2. Semantics
@@ -123,7 +125,7 @@ So which names could you refactor? How can you improve the semantics of your pro
 
 ### 3. Beauty
 
-Some would have you think that software engineering is a cold discipline, nothing could be further from the truth. Writing software is an art, it's composing a virtual machine with logic constructs made visible with written symbols, symbols that communicate with the next human who will read them. Which of us hasn't known the joy of completing a function, a module, with the knowledge that it runs with the utmost elegance, efficiency and simplicity that we could ever come up with? Material-world artisans can build wonderful contraptions made of lights, rolling balls, levers and pullies. So can we, but ours are invisible to the untrained eye.
+Some would have you think that software engineering is a cold discipline, nothing could be further from the truth. Writing software is an art, it's composing a virtual machine with logic constructs made visible with written symbols, symbols that communicate with the next human who will read them. Which of us hasn't known the joy of completing a function, a module, with the knowledge that it runs with the utmost elegance, efficiency and simplicity that we could ever come up with? Material-world artisans can build wonderful contraptions made of lights, rolling balls, levers and pullies. So can we, but ours are made of logic constructs, invisible to the untrained eye.
 
 The way we write softare has a huge influence on how it is perceived by others. The brain is a pattern-matching system that relies on recurring patterns to ease its processing. Inserting symmetry, spacing and alignment—in other words, beauty—in our code makes it easier to read. For example, I initially wrote these words you saw sooner in this format:
 
@@ -139,7 +141,7 @@ Writing code isn't just about semantics, it's also about writing it in a way tha
 
 #### Building pyramids
 
-Call me crazy but I always sort code lines this way, and I call these pyramids. Tell me, which one of these blocks seems easier to read for you?
+I always sort code lines this way, and I call these pyramids. Tell me, which one of these blocks seems easier to read for you?
 
 <div class='code-blocks'>
 
@@ -181,7 +183,9 @@ const ROW_GROUPING_STRATEGY_DATA_SOURCE = 'data-source'
 
 </div>
 
-Although the names sounds more natural when pronounced out loud for the first block, they're much easier to read as a whole in the second one.
+Although the names sound more natural when pronounced out loud for the first block, they're much easier to read as a whole in the second one.
+
+Another alignment example:
 
 <div class='code-blocks'>
 
@@ -208,14 +212,14 @@ Although the names sounds more natural when pronounced out loud for the first bl
 
 #### Aligning for logic
 
-Another way in which harmonious alignment can be helpful is when we need have operations on mostly similar expression, with slightly differing semantics. The example below is from a python codebase I worked on (translated in javascript). In this particular case I had to fight the auto-formatter (and colleagues) to have it formatted properly.
+Another way in which alignment can be helpful is when we need have operations on mostly similar expression, with slightly differing semantics. The example below is from a python codebase I worked on (translated in javascript). In this particular case I had to fight the auto-formatter (and colleagues) to have it formatted properly.
 
 <div class='code-blocks'>
 
 ```javascript
 // code as the auto-formatter wanted it
 const average = (stats, df) => [df > stats.average, df <= stats.average]
-const q1 = (stats, df) => [df < stats.q1, df <= stats.q1]
+const q1 = (stats, df) => [df > stats.q1, df <= stats.q1]
 const outliers = (stats, df) => [df > stats.outliers, df <= stats.outliers]
 const even = (stats, df) => [df % 2 == 0, df % 2 == 1]
 ```
@@ -227,7 +231,7 @@ const average = (stats, df) => [
   df <= stats.average,
 ]
 const q1 = (stats, df) => [
-  df <  stats.q1,
+  df >  stats.q1,
   df <= stats.q1,
 ]
 const outlier = (stats, df) => [
@@ -242,7 +246,48 @@ const even = (stats, df) => [
 
 </div>
 
-Which of those block would you prefer to code review? The auto-formatted one, or the manually formatted one? For all their benefits, full-code formatters like `prettier` have gotten many programmers convinced that even talking about formatting and alignment is a negative, best left to machines to deal with. Code is not just about machines. It's about humans. I don't want to have to argue if the `{` should be after the `if` or on a line of its own or have to remind people about adding spaces around their `+` operators. `eslint` can do that well enough. But beauty goes beyond `prettier`.
+Which of those block would you prefer to code review? The auto-formatted one, or the manually formatted one? For all their benefits, full-code formatters like `prettier` have gotten many programmers convinced that even talking about formatting and alignment is a negative, best left to machines to deal with. Code is not just about machines. It's about humans.
+
+I don't want to have to argue if the `{` should be after the `if` or on a line of its own. `eslint` can do that well enough. But beauty goes beyond `prettier`.
+
+#### Spacing for clarity
+
+And if the last example I went for using more vertical space, the opposite can also improve readability.
+
+<div class='code-blocks'>
+
+```typescript
+switch (priority) {
+  case DiscreteEventPriority:
+    priority = ImmediatePriority;
+    break;
+  case ContinuousEventPriority:
+    priority = UserBlockingPriority;
+    break;
+  case DefaultEventPriority:
+    priority = NormalPriority;
+    break;
+  case IdleEventPriority:
+    priority = IdlePriority;
+    break;
+  default:
+    priority = NormalPriority;
+    break;
+}
+```
+```typescript
+switch (priority) {
+  case DiscreteEventPriority:   priority = ImmediatePriority;    break;
+  case ContinuousEventPriority: priority = UserBlockingPriority; break;
+  case DefaultEventPriority:    priority = NormalPriority;       break;
+  case IdleEventPriority:       priority = IdlePriority;         break;
+  default:                      priority = NormalPriority;       break;
+}
+```
+</div>
+
+ The amount of spacing to use for code follows the same rule that designers use for adding spacing in their designs: **use your eyes**. They will tell you if you need more or less. They will tell you if what they're seeing is beautiful or not.
+
 
 <RandomPlant className='mt-8 mb-16' />
 
@@ -250,7 +295,7 @@ Which of those block would you prefer to code review? The auto-formatted one, or
 
 I think if I had to summarize software engineering in one expression, it would be **managing complexity**. Most of our work as software engineers is keeping complexity in check with all the tools we have. One of the characteristics that code should have above all is *simplicity*, and that quality should be the first to aim for. Simple code is easy to read, easy to modify and easy to debug. Code that isn't simple is much harder to also make *correct* and *performant*, thus we should always aim for simplicity first.
 
-In fact, if features are an asset, code is a liability. A general rule, and I think everyone will agree with me, is that the more code you have, the more bugs you have. So a software product in theory we should aim to have as many features as possible, while having as little code as possible. That's why one of my favourite activities as a programmer is deleting large sections of code.
+In fact, if features are an asset, code is a liability. A general rule, and I think everyone will agree with me, is that the more code you have, the more bugs you have. So a software product in theory should aim to have as many features as possible, while having as little code as possible. That's why one of my favourite activities as a programmer is deleting large sections of code.
 
 In practice, in the front-end world this manifest itself as implementing features using browser APIs and CSS instead of re-building existing features in javascript (please no more stupidity like CSS-in-JS ever again).
 
@@ -262,8 +307,6 @@ As a last point, I think I need to mention that the root of all qualities in sof
 
 <RandomPlant className='mt-8 mb-16' />
 
-### Credits
+### Conclusion
 
-I can't claim credit for any of the points here as they've all been transmitted to me throughout years of programming. I unfortunately can't remember where I picked up each of those idea, but I think I owe at least some of them to [Uncle Bob](https://blog.cleancoder.com/), [Joel on software](https://www.joelonsoftware.com/) and so many others.
-
-
+I hope I was able to pass along some of the zen of programming to you. I can't claim credit for any of the points here as they've all been transmitted to me throughout years of programming. I unfortunately can't remember where I picked up each of those ideas, but I think I owe at least some of them to [Uncle Bob](https://blog.cleancoder.com/), [Joel on software](https://www.joelonsoftware.com/) and so many others.
