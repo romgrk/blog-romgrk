@@ -146,19 +146,19 @@ I always sort code lines this way, and I call these pyramids. Tell me, which one
 <div class='code-blocks'>
 
 ```javascript
-const hasUnitialized = items.some(i => i.status === Status.Unitialized)
-const hasActive = items.some(i => i.status === Status.Active)
+const hasUninitialized = items.some(i => i.status === Status.Uninitialized)
+const hasReady = items.some(i => i.status === Status.Ready)
 const hasInactive = items.some(i => i.status === Status.Inactive)
 const hasPending = items.some(i => i.status === Status.Pending)
 const hasCompleted = items.some(i => i.status === Status.Completed)
 ```
 
 ```javascript
-const hasActive = items.some(i => i.status === Status.Active)
+const hasReady = items.some(i => i.status === Status.Ready)
 const hasPending = items.some(i => i.status === Status.Pending)
 const hasInactive = items.some(i => i.status === Status.Inactive)
 const hasCompleted = items.some(i => i.status === Status.Completed)
-const hasUnitialized = items.some(i => i.status === Status.Unitialized)
+const hasUninitialized = items.some(i => i.status === Status.Uninitialized)
 ```
 
 </div>
