@@ -164,6 +164,12 @@ import {
   useSyncExternalStoreWithSelector
 } from 'use-sync-external-store/with-selector';
 
+class Store {
+  /* [...] */
+
+  getSnapshot = () => { return this.state }
+}
+
 function useSelector(store, selector, ...args) {
   return useSyncExternalStoreWithSelector(
     store.subscribe,
