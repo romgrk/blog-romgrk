@@ -1,0 +1,29 @@
+@keyframes flash {
+  0% {
+    border-radius: inherit;
+    border: 1px solid rgba(255, 0, 0, 0.6);
+    background-color: rgba(255, 0, 0, 0.2);
+  }
+  30% {
+    border-radius: inherit;
+    border: 1px solid rgba(255, 0, 0, 0.6);
+    background-color: rgba(255, 0, 0, 0.2);
+  }
+  100% {
+    border: 1px solid transparent;
+    background-color: rgba(255, 0, 0, 0);
+  }
+}
+.flash {
+  position: relative;
+}
+.flash::after {
+  content: ' ';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  animation: 2s flash;
+}
