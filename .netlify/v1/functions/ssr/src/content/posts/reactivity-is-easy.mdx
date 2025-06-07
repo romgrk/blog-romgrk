@@ -1,0 +1,282 @@
+---
+title: 'Reactivity is easy'
+description: ''
+pubDate: 'Jun 7 2025'
+sidebar: { display: false }
+---
+
+import Aside from '../../components/Aside.astro';
+import RandomPlant from '../../components/client/RandomPlant/RandomPlant.tsx';
+import { Naive, Optimized } from './reactivity-is-easy/index.tsx';
+import './reactivity-is-easy/index.css';
+
+Reactivity as a concept seems to be still misunderstood in the React ecosystem, and I wanted to provide a write-up of how we solved that problem in the MUI X Data Grid. I think fine-grained selector-based reactivity is possible in React in **less than 35 lines**, and I will give you a copy-pastable example of that by the end of this post (and a package for the lazy ones).
+
+I think it's important to be able to reduce a problem to its most minimalist solution, because it highlights more clearly what the problem is about. Simplicity is also one of the highest aims we should have for our code, because from simple code emerges easy maintainability and easy performance optimization. Understanding the most minimalist solution to a problem also allows you to build up from it, rather than being handed down a pre-built solution that you don't understand.
+
+## The problem at hand
+
+To replicate the problem we had in the Data Grid, here is a simple runnable example. It's a `Grid` with `Cell` components inside it. It stores the currently focused cell in a state at the root of the grid, and each cell can update the state when it gets focused:
+
+```jsx
+const Context = createContext();
+
+function Grid() {
+  const [focus, setFocus] = useState(0);
+  const context = useMemo(() => ({ focus, setFocus }), [focus]);
+
+  return (
+    <Context.Provider value={context}>
+      {Array.from({ length: 50 }).map((_, i) => (
+        <Cell index={i} />
+      ))}
+    </Context.Provider>
+  );
+}
+
+function Cell({ index }) {
+  const context = useContext(Context);
+  const focus = context.focus === index;
+  return (
+    <button
+      onClick={() => context.setFocus(index)}
+      className={clsx({ focus })}
+    >
+      {index}
+    </button>
+  );
+};
+```
+
+With a bit of styling and some instrumentation to flash-highlight cells when they re-render, here is our grid. You'll notice that each time you click on a cell, **all the cells re-render** :/
+
+<Naive.Grid client:load />
+<br />
+
+Because the root `Context` value needs to change to store the new `focus` value, then every cell that uses that context also needs to re-render to get to use it. This is an unsatisfying state of things considering that we might have a lot of cells, and each cell may be expensive to render.
+
+## A solution
+
+I promised you a solution in less than 35 lines of code, here it is. A store is essentially just a ref object that triggers callbacks when it changes. And those callbacks just need to trigger a targetted re-render, which we can do simply by calling a `setState` hook function in each component.
+
+```tsx showLineNumbers
+type Listener<S> = (s: S) => void;
+
+class Store<State> {
+  public state: State;
+  private listeners: Set<Listener<State>>;
+
+  constructor(state: State) {
+    this.state = state;
+    this.listeners = new Set();
+  }
+
+  public subscribe = (fn: Listener<State>) => {
+    this.listeners.add(fn);
+    return () => { this.listeners.delete(fn); };
+  };
+
+  public update = (newState: State) => {
+    this.state = newState;
+    this.listeners.forEach((l) => l(newState));
+  };
+}
+
+function useSelector(store, selector, ...args) {
+  const [value, setValue] =
+    useState(() => selector(store.state, ...args));
+
+  useEffect(() =>
+    store.subscribe((state) =>
+      setValue(selector(state, ...args)))
+  , []);
+
+  return value;
+}
+```
+
+To use it, all we have to do is place our `Store` instance in a context, and then every component can subscribe to store updates via `useSelector`. Because the selectors select the precise slice of state that a component is interested in, it will not re-render as long as that slice doesn't change.
+
+```tsx
+const Context = createContext();
+
+export function Grid() {
+  const [store] = useState(() => new Store({ focus: 0 }));
+
+  return (
+    <Context.Provider value={store}>
+      {Array.from({ length: 50 }).map((_, i) => (
+        <Cell index={i} />
+      ))}
+    </Context.Provider>
+  );
+}
+
+const selectors = {
+  isFocus: (state, index) => state.focus === index,
+};
+
+function Cell({ index }) {
+  const store = useContext(Context);
+  const focus = useSelector(store, selectors.isFocus, index);
+
+  return (
+    <button
+      ref={ref}
+      onClick={() => store.update({ ...store.state, focus: index })}
+      className={clsx({ focus })}
+    >
+      {index}
+    </button>
+  );
+};
+```
+
+And finally, here is our updated example. You'll notice that when you click a cell, only the two cells for which the focus changed re-render. All the other ones never have to ever update.
+
+<Optimized.Grid client:load />
+<br />
+
+If you've noticed, in this example we didn't even have to use `React.memo()` to avoid re-renders! The reason it's not useful is because the store updates target the `useState` hook inside each cell, so even though the store state changes, the outer `Grid` never needs to update, therefore it never re-renders its children either. Fine-grained reactivity is so simple, precise, and enjoyable. In practice, once the root component starts using state, you'll want to have `React.memo()` though.
+
+<Aside title="When does a component rerender?">
+As a reminder, components rerender when either of these is true:
+
+1. Their parent re-rendered
+2. Either `useState`, `useReducer` or `useContext` changed.
+
+And `React.memo()` is an escape hatch for the 1st point.
+</Aside>
+
+<RandomPlant className="mt-8 mb-24" />
+
+## Building up
+
+Alright, now that we've established the most minimalist solution here are a few more things to consider.
+
+### React edge-cases
+
+The `useSelector` implementation I provided above is nice to understand the concept, but you might run into edge-cases. Since React introduced a new async rendering model, state tearing can happen (analogous to [screen tearing](https://en.wikipedia.org/wiki/Screen_tearing)). To handle that, you need to use `use-sync-external-store`, or if you're using React 18 and above, just `React.useSyncExternalStore`. The package provides a shim for older versions though, and there's barely any bundle-size to it so I recommend it.
+
+
+```tsx
+import {
+  useSyncExternalStoreWithSelector
+} from 'use-sync-external-store/with-selector';
+
+function useSelector(store, selector, ...args) {
+  return useSyncExternalStoreWithSelector(
+    store.subscribe,
+    store.getSnapshot,
+    store.getSnapshot,
+    (state) => selector(state, ...args),
+  );
+}
+```
+
+### A more ergonomic store?
+
+You might have also noticed that updating the store is a bit of a mouthful. Having to write `store.update({ ...store.state, focus: 42 })` is tedious, it will be even more so once you have a deeper state object. So you might want to add utility methods on the store to be able to write more simply `store.set('focus', 42)`:
+
+```tsx showLineNumbers {4-6}
+class Store<State> {
+  /* ... */
+
+  public set<K extends keyof State>(key: K, value: State[K]) => {
+    this.update({ ...this.state, [key]: value });
+  }
+
+  /* ... */
+}
+```
+
+Here is a simple `.set()` implementation, but you can build you own by using your favourite utility-belt library to set paths directly, e.g. `lodash.set(state, 'a[0].b.c', 42)`.
+
+### Deriving state & computed values
+
+The minimalist selectors above are just plain functions, and that's more than enough to understand the concept. However for a production use-case like we had in the Data Grid, being able to compute values derived from the state is essential. To solve that problem, we introduced **memoized selectors**. To avoid re-inventing the wheel, we just used redux's `reselect` implementation of `createSelectorMemoized` ([docs link](https://reselect.js.org/api/createselector/)):
+
+```tsx
+import {
+  createSelector as createSelectorMemoized
+} from 'reselect'
+
+// Imagine a datagrid, with a set of rows and a "sortBy"
+// key to sort those rows.
+const store = new Store({ rows: [
+  { id: 1, name: 'John' },
+  { id: 2, name: 'Alice' },
+  { id: 3, name: 'Bob' },
+], sortBy: 'id' })
+
+const rowsSelector   = state => state.rows
+const sortBySelector = state => state.sortBy
+
+const sortedRowsSelector = createSelectorMemoized(
+  // The selector uses these 2 other selectors as its inputs.
+  rowsSelector,
+  sortBySelector,
+
+  // Instead of receiving the `state`, it receives the return values
+  // of the selectors above, and it outputs a sorted rows array.
+  (rows, sortBy) => {
+    return rows.toSorted((a, b) => compare(a[sortBy], b[sortBy]))
+  }
+)
+```
+
+And then using that selector is as simple as using any other selector:
+
+```tsx
+function Component() {
+  const store = useContext(Context)
+  const sortedRows = useSelector(store, sortedRowsSelector)
+  /* ... */
+}
+```
+
+And `sortedRows` never gets computed more than it needs to 🪄.
+
+In practice we write all our selectors with `createSelectorMemoized` and an equivalent non-memoized `createSelector`, which lets us write them in a consistent way as well as add some instrumentation over them.
+
+```tsx
+const rows =  createSelector((state: State) => state.rows)
+const sortBy = createSelector((state: State) => state.sortBy)
+const sortedRows = createSelectorMemoized(
+  rows, sortBy,
+  (rows, sortBy) =>
+    rows.toSorted((a, b) => compare(a[sortBy], b[sortBy]))
+)
+```
+
+This syntax could also allow us in the future (with some magic) to possibly switch to an event-based reactivity model, while using a selector-based syntax 🙈. The concept is based on a automatic subscription model similar to SolidJS signals. That's for another post though.
+
+<Aside title="When to use memoization?">
+The rule for using memoization in selectors is:
+
+1. The result is a derived non-primitive value.
+2. The selector is computationally expensive.
+
+Don't under-use nor over-use it, or you'll suffer consequences.
+</Aside>
+
+
+## I want a package
+
+You probably want a package and I don't blame you, I'm also very lazy.
+
+I've published this code including the building-up section as a package on NPM as [store-x-selector](https://www.npmjs.com/package/store-x-selector).
+
+It contains a few more performance optimizations to make selector with arguments as cost-less as possible (for example, it doesn't use `...args` to avoid an array allocation), and it also contains accurate typings for all of this.
+
+## Final notes
+
+If you have any comments, corrections or questions, email in the footer. I'm always happy to receive feedback or questions from readers.
+
+<RandomPlant className="mt-8 mb-32" />
+
+<div className='text-neutral-500'>
+
+If you've made it this far, I invite you to view [The Castle](/castle).
+
+</div>
