@@ -9,7 +9,7 @@ export async function GET(context) {
     description: SITE_DESCRIPTION,
     site: context.site,
     items: posts
-      .filter((post) => !post.draft)
+      .filter((post) => !post.data.draft)
       .map((post) => ({ ...post.data, link: `/posts/${post.slug}/` })),
   });
 }
